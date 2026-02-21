@@ -36,18 +36,13 @@ const FREE_HOSTS = [
 ];
 
 const CHANNELS: Channel[] = [
-    // --- SPORTS ---
-    { id: 's1', name: 'Sports TV 1', logo: '⚽', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
-    { id: 's2', name: 'Cricket Live', logo: '🏏', url: 'https://playertest.longtailvideo.com/adaptive/wowzaid3/playlist.m3u8', category: 'Sports' },
-    { id: 's3', name: 'Star Sports 1', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
+    // --- STABLE TEST STREAMS ---
+    { id: 's1', name: 'Test: Tears of Steel', logo: '📽️', url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', category: 'Sports' },
+    { id: 's2', name: 'Test: Big Buck Bunny', logo: '🐰', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Movies' },
 
-    // --- MOVIES ---
-    { id: 'm1', name: 'HBO Movies', logo: '🎬', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Movies' },
-    { id: 'm2', name: 'Action Zone', logo: '🔥', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Movies' },
-
-    // --- SL TV ---
-    { id: 'sl1', name: 'ITN Sri Lanka', logo: '📺', url: 'https://itn.m3u8.stream/live.m3u8', category: 'SL TV' },
-    { id: 'sl2', name: 'Hiru TV', logo: '📺', url: 'https://hiru.m3u8.stream/live.m3u8', category: 'SL TV' },
+    // --- SRI LANKAN CHANNELS ---
+    { id: 'sl1', name: 'ITN (Live)', logo: '📺', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV' },
+    { id: 'sl2', name: 'Rupavahini', logo: '📺', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'SL TV' },
 ];
 
 export default function ShazanTVApp() {
@@ -72,7 +67,7 @@ export default function ShazanTVApp() {
         const video = videoRef.current;
         const source = channel.url;
 
-        setStatus('Connecting via ' + activeHost.host);
+        setStatus('Connecting to ' + channel.name + '...');
         setShowPlayOverlay(false);
         setIsPlaying(false);
 
@@ -84,32 +79,51 @@ export default function ShazanTVApp() {
             const hls = new Hls({
                 enableWorker: true,
                 lowLatencyMode: true,
+                backBufferLength: 90,
+                manifestLoadingMaxRetry: 4,
             });
 
             hls.loadSource(source);
             hls.attachMedia(video);
+
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
                 video.play().then(() => {
                     setIsPlaying(true);
-                    setStatus('Streaming: ' + channel.name);
+                    setStatus('Streaming Now');
                 }).catch(() => {
                     setShowPlayOverlay(true);
-                    setStatus('Tap to Play');
+                    setStatus('Ready - Tap Play Icon');
                 });
             });
 
             hls.on(Hls.Events.ERROR, (event, data) => {
                 if (data.fatal) {
-                    setStatus('Stream Error: Retrying...');
-                    hls.recoverMediaError();
+                    switch (data.type) {
+                        case Hls.ErrorTypes.NETWORK_ERROR:
+                            setStatus('Connection Error: Check Data');
+                            hls.startLoad();
+                            break;
+                        case Hls.ErrorTypes.MEDIA_ERROR:
+                            setStatus('Media Error: Retrying...');
+                            hls.recoverMediaError();
+                            break;
+                        default:
+                            setStatus('Playback Failed');
+                            hls.destroy();
+                            break;
+                    }
                 }
             });
 
             hlsRef.current = hls;
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
             video.src = source;
-            video.addEventListener('loadedmetadata', () => {
-                video.play().then(() => setIsPlaying(true)).catch(() => setShowPlayOverlay(true));
+            video.play().then(() => {
+                setIsPlaying(true);
+                setStatus('Streaming Now');
+            }).catch(() => {
+                setShowPlayOverlay(true);
+                setStatus('Ready - Tap Play Icon');
             });
         }
     };
@@ -123,14 +137,18 @@ export default function ShazanTVApp() {
                 hlsRef.current.destroy();
             }
         };
-    }, [selectedChannel, activeHost]); // Added activeHost to dependencies to re-initialize player if host changes
+    }, [selectedChannel, activeHost]);
 
     const handleManualPlay = () => {
         if (videoRef.current) {
-            videoRef.current.play();
-            setIsPlaying(true);
-            setShowPlayOverlay(false);
-            if (selectedChannel) setStatus('Streaming: ' + selectedChannel.name);
+            videoRef.current.play().then(() => {
+                setIsPlaying(true);
+                setShowPlayOverlay(false);
+                if (selectedChannel) setStatus('Streaming Now');
+            }).catch(err => {
+                console.error("Manual play failed", err);
+                setStatus("Play blocked by browser");
+            });
         }
     };
 
