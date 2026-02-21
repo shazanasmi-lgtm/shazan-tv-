@@ -16,6 +16,7 @@ import {
     Unlock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Hls from 'hls.js';
 
 // --- DATA TYPES ---
 interface Channel {
@@ -36,16 +37,14 @@ const FREE_HOSTS = [
 
 const CHANNELS: Channel[] = [
     // --- SPORTS ---
-    { id: 's1', name: 'DTV Sports 1', logo: '⚽', url: 'https://dtv-live.cdn/sports/stream1.m3u8', category: 'Sports' },
-    { id: 's2', name: 'DTV Sports 2', logo: '🏏', url: 'https://dtv-live.cdn/sports/stream2.m3u8', category: 'Sports' },
-    { id: 's3', name: 'Star Sports 1', logo: '🏏', url: 'https://star-sports.cdn/ss1/live.m3u8', category: 'Sports' },
-    { id: 's4', name: 'Sony Ten 2', logo: '🎾', url: 'https://sony-live.cdn/ten2/stream.m3u8', category: 'Sports' },
-    { id: 's5', name: 'Channel Eye', logo: '👁️', url: 'https://slrc.live/Eye/stream.m3u8', category: 'Sports' },
+    { id: 's1', name: 'DTV Sports 1', logo: '⚽', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
+    { id: 's2', name: 'Cricket Live', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
+    { id: 's3', name: 'Channel Eye', logo: '👁️', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
     // --- GENERAL ---
-    { id: '1', name: 'ITN', logo: '📺', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'General' },
-    { id: '2', name: 'Rupavahini', logo: '📺', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'General' },
-    { id: '3', name: 'Sirasa TV', logo: '📺', url: 'https://sirasa.stream/live.m3u8', category: 'Entertainment' },
-    { id: '4', name: 'Derana', logo: '📺', url: 'https://derana.cdn/live.m3u8', category: 'News' },
+    { id: '1', name: 'ITN', logo: '📺', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'General' },
+    { id: '2', name: 'Rupavahini', logo: '📺', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'General' },
+    { id: '3', name: 'Sirasa TV', logo: '📺', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Entertainment' },
+    { id: '4', name: 'Derana', logo: '📺', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'News' },
 ];
 
 export default function ShazanTVApp() {
@@ -57,30 +56,63 @@ export default function ShazanTVApp() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isLocked, setIsLocked] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
+    const hlsRef = useRef<Hls | null>(null);
 
     const CATEGORIES = ['All', 'Sports', 'General', 'News', 'Entertainment'];
+
+    // --- VIDEO PLAYBACK LOGIC ---
+    useEffect(() => {
+        if (!selectedChannel || !videoRef.current) return;
+
+        const video = videoRef.current;
+        const source = selectedChannel.url;
+
+        if (Hls.isSupported()) {
+            if (hlsRef.current) {
+                hlsRef.current.destroy();
+            }
+
+            const hls = new Hls({
+                // In a real environment with a proxy, we'd add custom headers here
+                // xhrSetup: (xhr) => {
+                //   if (isSpoofingActive) {
+                //     xhr.setRequestHeader('X-Online-Host', activeHost.host);
+                //   }
+                // }
+            });
+
+            hls.loadSource(source);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                video.play().catch(e => console.log("Auto-play blocked"));
+            });
+            hlsRef.current = hls;
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = source;
+            video.addEventListener('loadedmetadata', () => {
+                video.play();
+            });
+        }
+
+        return () => {
+            if (hlsRef.current) {
+                hlsRef.current.destroy();
+            }
+        };
+    }, [selectedChannel]);
 
     // --- SPOOFING LOGIC ---
     const applySpoofing = (originalUrl: string) => {
         if (!isSpoofingActive) return originalUrl;
-
-        // logic: We wrap the original URL or rewrite it to trick the ISP
-        // In a real app, this would involve a local proxy or custom headers
-        // For this UI demo, we show the "Spoofed URL" logic
-        try {
-            const urlObj = new URL(originalUrl);
-            // Example spoof: http://[FREE_HOST].original-domain.com/path
-            return `${urlObj.protocol}//${activeHost.host}.${urlObj.hostname}${urlObj.pathname}`;
-        } catch {
-            return originalUrl;
-        }
+        // For web browsers, we show the spoofed domain visually
+        // Real spoofing happens via XHR headers or a Proxy server
+        return originalUrl;
     };
 
     const playChannel = (channel: Channel) => {
         setSelectedChannel(channel);
         setStatus('Connecting via ' + activeHost.name);
 
-        // Simulate connection delay
         setTimeout(() => {
             setStatus('Streaming: ' + channel.name);
         }, 1500);
@@ -119,12 +151,21 @@ export default function ShazanTVApp() {
 
             {/* --- PLAYER SECTION --- */}
             <section className="px-6 mb-8 z-10">
-                <div className="relative aspect-video glass rounded-3xl overflow-hidden group">
+                <div className="relative aspect-video glass rounded-3xl overflow-hidden group bg-black">
                     {selectedChannel ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-black/40">
-                            {/* This represents our HLS Video Player */}
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <Play size={48} className="text-white/50 animate-pulse" />
+                        <div className="w-full h-full relative">
+                            <video
+                                ref={videoRef}
+                                className="w-full h-full object-cover"
+                                playsInline
+                                controls={false}
+                            />
+
+                            {/* Overlay Controls */}
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                {!status.includes('Streaming') && (
+                                    <Play size={48} className="text-white/30 animate-pulse" />
+                                )}
                             </div>
 
                             {/* Header HUD */}
