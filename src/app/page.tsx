@@ -39,12 +39,33 @@ const CHANNELS: Channel[] = [
     // --- SPORTS ---
     { id: 's1', name: 'DTV Sports 1', logo: '⚽', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
     { id: 's2', name: 'Cricket Live', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
-    { id: 's3', name: 'Channel Eye', logo: '👁️', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
-    // --- GENERAL ---
-    { id: '1', name: 'ITN', logo: '📺', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'General' },
-    { id: '2', name: 'Rupavahini', logo: '📺', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'General' },
-    { id: '3', name: 'Sirasa TV', logo: '📺', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Entertainment' },
-    { id: '4', name: 'Derana', logo: '📺', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'News' },
+    { id: 's3', name: 'Star Sports 1', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
+    { id: 's4', name: 'Sony Ten 2', logo: '🎾', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
+    { id: 's5', name: 'Eurosport', logo: '🚴', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
+
+    // --- MOVIES & ENTERTAINMENT ---
+    { id: 'm1', name: 'HBO Movies', logo: '🎬', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Movies' },
+    { id: 'm2', name: 'Action Zone', logo: '🔥', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Movies' },
+    { id: 'm3', name: 'Cinema Hall', logo: '🍿', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Movies' },
+    { id: 'e1', name: 'Sony TV', logo: '🎭', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Entertainment' },
+    { id: 'e2', name: 'Star Plus', logo: '🌟', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Entertainment' },
+
+    // --- DOCUMENTARY ---
+    { id: 'd1', name: 'Discovery', logo: '🌍', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Documentary' },
+    { id: 'd2', name: 'Nat Geo', logo: '🐆', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Documentary' },
+    { id: 'd3', name: 'Animal Planet', logo: '🐘', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Documentary' },
+
+    // --- INTERNATIONAL NEWS ---
+    { id: 'n1', name: 'BBC News', logo: '🌐', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'News' },
+    { id: 'n2', name: 'Al Jazeera', logo: '🌍', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'News' },
+    { id: 'n3', name: 'CNN', logo: '📢', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'News' },
+
+    // --- SRI LANKAN CHANNELS ---
+    { id: 'sl1', name: 'ITN', logo: '📺', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'SL TV' },
+    { id: 'sl2', name: 'Rupavahini', logo: '📺', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'SL TV' },
+    { id: 'sl3', name: 'Sirasa TV', logo: '📺', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'SL TV' },
+    { id: 'sl4', name: 'Derana', logo: '📺', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'SL TV' },
+    { id: 'sl5', name: 'Hiru TV', logo: '📺', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'SL TV' },
 ];
 
 export default function ShazanTVApp() {
@@ -58,7 +79,7 @@ export default function ShazanTVApp() {
     const videoRef = useRef<HTMLVideoElement>(null);
     const hlsRef = useRef<Hls | null>(null);
 
-    const CATEGORIES = ['All', 'Sports', 'General', 'News', 'Entertainment'];
+    const CATEGORIES = ['All', 'Sports', 'Movies', 'News', 'Documentary', 'Entertainment', 'SL TV'];
 
     // --- VIDEO PLAYBACK LOGIC ---
     useEffect(() => {
