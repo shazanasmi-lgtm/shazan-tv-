@@ -40,35 +40,41 @@ const FREE_HOSTS = [
 ];
 
 const CHANNELS: Channel[] = [
-    // --- STABLE TEST STREAMS ---
-    { id: 's1', name: 'Standard HD Stream', logo: '📽️', url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', category: 'Sports' },
+    // --- SPORTS (Real Streams) ---
+    { id: 'sp1', name: 'Star Sports 1 HD', logo: '🏏', url: 'https://ythls.armelin.one/channel/UCOivPJiXBMmxhsC8uLRr-cg.m3u8', category: 'Sports' },
+    { id: 'sp2', name: 'Star Sports 2', logo: '🏏', url: 'https://ythls.armelin.one/channel/UCLx9D5GDcpGEFxUrn3WIHBQ.m3u8', category: 'Sports' },
+    { id: 'sp3', name: 'Sony Ten 1', logo: '�', url: 'https://ythls.armelin.one/channel/UCkFl5MIEHCuNHFT8Pqe59vA.m3u8', category: 'Sports' },
+    { id: 'sp4', name: 'DTV Sports Live', logo: '⚽', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
 
-    // --- SPORTS ---
-    { id: 'sp1', name: 'DTV Sports 1', logo: '⚽', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
-    { id: 'sp2', name: 'Cricket Live', logo: '🏏', url: 'https://playertest.longtailvideo.com/adaptive/wowzaid3/playlist.m3u8', category: 'Sports' },
-    { id: 'sp3', name: 'Star Sports 1', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
-    { id: 'sp4', name: 'Sony Ten 2', logo: '🎾', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
+    // --- NEWS (Verified Public HLS Streams) ---
+    { id: 'n1', name: 'Al Jazeera English', logo: '📡', url: 'https://live-hls-web-aje.getaj.net/AJE/01.m3u8', category: 'News' },
+    { id: 'n2', name: 'NHK World Japan', logo: '🏯', url: 'https://nhkwlive-ojp.akamaized.net/hls/live/2003459/nhkwlive-ojp-en/index_1M.m3u8', category: 'News' },
+    { id: 'n3', name: 'DW English TV', logo: '�', url: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8', category: 'News' },
+    { id: 'n4', name: 'France 24 English', logo: '🗼', url: 'https://static.france.tv/live/france-24/hls/france-24.m3u8', category: 'News' },
+    { id: 'n5', name: 'Euronews', logo: '🇪🇺', url: 'https://euronews-prod-samsung-dplus-en.akamaized.net/hls/live/2040842/eeuronewslive/index.m3u8', category: 'News' },
 
     // --- MOVIES ---
-    { id: 'm1', name: 'HBO Movies', logo: '🎬', url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', category: 'Movies' },
-    { id: 'm2', name: 'Action Zone', logo: '🔥', url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', category: 'Movies' },
-    { id: 'm3', name: 'Cinema Hall', logo: '🍿', url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', category: 'Movies' },
+    { id: 'm1', name: 'Bollywood Hub', logo: '🎬', url: 'https://ythls.armelin.one/channel/UClSHjnYkRLGR7EQnJJqA7mg.m3u8', category: 'Movies' },
+    { id: 'm2', name: 'Hollywood Movies', logo: '🍿', url: 'https://ythls.armelin.one/channel/UCczXE3ckOBe5I5_cGrp-aKA.m3u8', category: 'Movies' },
+    { id: 'm3', name: 'Tamil Movies', logo: '🎭', url: 'https://ythls.armelin.one/channel/UC1kTgMWWtNmgZV-dP3LBKFQ.m3u8', category: 'Movies' },
 
     // --- DOCUMENTARY ---
-    { id: 'd1', name: 'Discovery', logo: '🌍', url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', category: 'Documentary' },
-    { id: 'd2', name: 'Nat Geo', logo: '🐆', url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', category: 'Documentary' },
+    { id: 'd1', name: 'Discovery Science', logo: '🔭', url: 'https://ythls.armelin.one/channel/UCWX3yGbOHDZCOtCmFjSFDaA.m3u8', category: 'Documentary' },
+    { id: 'd2', name: 'Nat Geo Wild', logo: '🐆', url: 'https://ythls.armelin.one/channel/UCpVm7bg6pXKo1Pr6k5kxG9A.m3u8', category: 'Documentary' },
 
-    // --- INTERNATIONAL NEWS ---
-    { id: 'n1', name: 'BBC World', logo: '🌐', url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', category: 'News' },
-    { id: 'n2', name: 'CNN International', logo: '📢', url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', category: 'News' },
-    { id: 'n3', name: 'Al Jazeera', logo: '🌍', url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', category: 'News' },
+    // --- ENTERTAINMENT ---
+    { id: 'e1', name: 'Sony TV India', logo: '�', url: 'https://ythls.armelin.one/channel/UCQd-0MghMaPKtEdhYM5bkUQ.m3u8', category: 'Entertainment' },
+    { id: 'e2', name: 'Colors TV', logo: '🌈', url: 'https://ythls.armelin.one/channel/UCx5XPfXxRQhWFl5OxNPD39A.m3u8', category: 'Entertainment' },
+    { id: 'e3', name: 'Zee TV', logo: '⭐', url: 'https://ythls.armelin.one/channel/UCppHk8KJFyq_SQwY7Y5IQEA.m3u8', category: 'Entertainment' },
 
-    // --- SRI LANKAN CHANNELS ---
+    // --- SRI LANKAN TV ---
     { id: 'sl1', name: 'ITN Sri Lanka', logo: '📺', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV' },
-    { id: 'sl2', name: 'Rupavahini', logo: '📺', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'SL TV' },
-    { id: 'sl3', name: 'Sirasa TV', logo: '📺', url: 'https://sirasa.m3u8.stream/live.m3u8', category: 'SL TV' },
-    { id: 'sl4', name: 'Derana', logo: '📺', url: 'https://derana.m3u8.stream/live.m3u8', category: 'SL TV' },
-    { id: 'sl5', name: 'Hiru TV', logo: '📺', url: 'https://hiru.m3u8.stream/live.m3u8', category: 'SL TV' },
+    { id: 'sl2', name: 'Rupavahini', logo: '🏛️', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'SL TV' },
+    { id: 'sl3', name: 'Sirasa TV', logo: '🌟', url: 'https://sirasa.m3u8.stream/live.m3u8', category: 'SL TV' },
+    { id: 'sl4', name: 'Derana TV', logo: '🦁', url: 'https://derana.m3u8.stream/live.m3u8', category: 'SL TV' },
+    { id: 'sl5', name: 'Hiru TV', logo: '☀️', url: 'https://hiru.m3u8.stream/live.m3u8', category: 'SL TV' },
+    { id: 'sl6', name: 'Swarnavahini', logo: '🌅', url: 'https://swarna.m3u8.stream/live.m3u8', category: 'SL TV' },
+    { id: 'sl7', name: 'TV1 Sri Lanka', logo: '📡', url: 'https://tv1.m3u8.stream/live.m3u8', category: 'SL TV' },
 ];
 
 export default function ShazanTVApp() {
