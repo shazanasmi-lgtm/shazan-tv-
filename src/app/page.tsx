@@ -119,6 +119,7 @@ export default function ShazanTVApp() {
     const [showPlaylistPanel, setShowPlaylistPanel] = useState(false);
     const [customM3uUrl, setCustomM3uUrl] = useState('');
     const [customM3uLoading, setCustomM3uLoading] = useState(false);
+    const [showSetupGuide, setShowSetupGuide] = useState(false);
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -449,17 +450,82 @@ export default function ShazanTVApp() {
                     <div className="flex items-center justify-between bg-gradient-to-r from-blue-900/30 to-purple-900/20 border border-blue-500/20 rounded-2xl px-4 py-3">
                         <div>
                             <p className="text-[10px] font-black text-blue-300 uppercase tracking-widest">Dialog Zero Data</p>
-                            <p className="text-[8px] text-gray-400 mt-0.5">HTTP Injector config — watch free via Dialog</p>
+                            <p className="text-[8px] text-gray-400 mt-0.5">HTTP Injector manual setup guide</p>
                         </div>
-                        <a
-                            href="/dialog-zero.hie"
-                            download="SHazanTV-Dialog-Zero.hie"
+                        <button
+                            onClick={() => setShowSetupGuide(true)}
                             className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 rounded-xl text-[9px] font-black text-white shadow-lg shadow-blue-600/30 hover:bg-blue-500 transition-colors"
                         >
-                            ⬇️ Download Config
-                        </a>
+                            📋 View Setup
+                        </button>
                     </div>
                 </section>
+
+                {/* SETUP GUIDE MODAL */}
+                <AnimatePresence>
+                    {showSetupGuide && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 backdrop-blur-sm"
+                            onClick={() => setShowSetupGuide(false)}
+                        >
+                            <motion.div
+                                initial={{ y: 100 }}
+                                animate={{ y: 0 }}
+                                exit={{ y: 100 }}
+                                className="w-full max-w-md bg-[#0f0f1a] border border-white/10 rounded-t-3xl p-6 pb-10"
+                                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                            >
+                                <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-5" />
+                                <h2 className="text-sm font-black text-white mb-1">📱 HTTP Injector Setup</h2>
+                                <p className="text-[9px] text-blue-400 font-bold uppercase tracking-widest mb-5">Dialog Zero Data — Free TV Streaming</p>
+
+                                <div className="space-y-3">
+                                    {[
+                                        { step: '1', title: 'Install App', desc: 'Play Store → Search "HTTP Injector" → Install (by Evozi)' },
+                                        { step: '2', title: 'Open HTTP Injector', desc: 'Open the app → Tap menu (≡) top left' },
+                                        { step: '3', title: 'SSH/Payload Settings', desc: 'Go to "Payload" tab → clear existing → paste below:' },
+                                        { step: '4', title: 'Enter Real Host', desc: 'Real Host field → type exactly: viu.lk' },
+                                        { step: '5', title: 'Connect & Open TV', desc: 'Tap big START button → wait for 🔑 key icon → open Shazan TV' },
+                                    ].map(item => (
+                                        <div key={item.step} className="flex gap-3 items-start">
+                                            <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 text-[9px] font-black">{item.step}</div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-white">{item.title}</p>
+                                                <p className="text-[9px] text-gray-400 mt-0.5">{item.desc}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Config values */}
+                                <div className="mt-5 bg-black/40 rounded-2xl p-4 border border-white/5">
+                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Config Values</p>
+                                    {[
+                                        { label: 'Real Host', value: 'viu.lk' },
+                                        { label: 'Port', value: '8080' },
+                                        { label: 'Payload', value: 'GET / HTTP/1.1[crlf]Host: viu.lk[crlf][crlf]' },
+                                        { label: 'DNS', value: '8.8.8.8' },
+                                    ].map(row => (
+                                        <div key={row.label} className="flex justify-between items-center py-1.5 border-b border-white/5 last:border-0">
+                                            <span className="text-[9px] text-gray-500 font-bold">{row.label}</span>
+                                            <span className="text-[9px] text-blue-300 font-mono bg-blue-950/40 px-2 py-0.5 rounded-lg">{row.value}</span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <button
+                                    onClick={() => setShowSetupGuide(false)}
+                                    className="w-full mt-5 py-3 bg-blue-600 rounded-2xl text-xs font-black text-white shadow-lg shadow-blue-600/30"
+                                >
+                                    Got It ✓
+                                </button>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 <section className="px-4 mb-3">
                     <div className="relative">
