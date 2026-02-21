@@ -126,7 +126,8 @@ export default function ShazanTVApp() {
                 backBufferLength: 90,
             });
 
-            hls.loadSource(source);
+            const bypassed = isSpoofingActive ? `https://p.pivp.lk/proxy?url=${encodeURIComponent(source)}&host=${activeHost.host}` : source;
+            hls.loadSource(bypassed);
             hls.attachMedia(video);
 
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -148,7 +149,8 @@ export default function ShazanTVApp() {
 
             hlsRef.current = hls;
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = source;
+            const bypassed = isSpoofingActive ? `https://p.pivp.lk/proxy?url=${encodeURIComponent(source)}&host=${activeHost.host}` : source;
+            video.src = bypassed;
             video.play()
                 .then(() => { setIsPlaying(true); setStatus('Streaming: ' + channel.name); })
                 .catch(() => { setShowPlayOverlay(true); setStatus('Tap to Resume'); });
@@ -162,7 +164,7 @@ export default function ShazanTVApp() {
         return () => {
             if (hlsRef.current) hlsRef.current.destroy();
         };
-    }, [selectedChannel, activeHost]);
+    }, [selectedChannel, activeHost, isSpoofingActive]);
 
     const handleManualPlay = () => {
         if (isLocked) {
