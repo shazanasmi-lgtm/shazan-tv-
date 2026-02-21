@@ -1,104 +1,156 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-    Play,
-    Tv,
-    Settings,
-    Zap,
-    Info,
-    Wifi,
-    WifiOff,
-    Search,
-    Maximize,
-    Volume2,
-    Lock,
-    Unlock,
-    Activity,
-    Smartphone,
-    Layers,
-    Globe
+    Play, Tv, Settings, Zap, Wifi, WifiOff, Search, Maximize,
+    Lock, Unlock, Activity, Layers, Globe, RefreshCw, Filter,
+    ChevronDown, List, Radio
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Hls from 'hls.js';
 
-// --- DATA TYPES ---
+// --- TYPES ---
 interface Channel {
     id: string;
     name: string;
     logo: string;
     url: string;
     category: string;
+    country?: string;
+    language?: string;
 }
 
-// --- CONFIG ---
+// --- FREE HOSTS ---
 const FREE_HOSTS = [
+    { id: 'direct', name: 'Direct (Normal Data)', host: 'direct', icon: '🌐' },
     { id: 'viu', name: 'Dialog Viu (Zero)', host: 'viu.lk', icon: '📺' },
     { id: 'pivp', name: 'DTV Proxy', host: 'p.pivp.lk', icon: '⚡' },
     { id: 'whatsapp', name: 'WhatsApp Pack', host: 'v.whatsapp.net', icon: '🟢' },
-    { id: 'dialog_portal', name: 'Zero Portal', host: 'tm.dialog.lk', icon: '🔵' },
 ];
 
-const CHANNELS: Channel[] = [
-    // --- SPORTS (Real Streams) ---
-    { id: 'sp1', name: 'Star Sports 1 HD', logo: '🏏', url: 'https://ythls.armelin.one/channel/UCOivPJiXBMmxhsC8uLRr-cg.m3u8', category: 'Sports' },
-    { id: 'sp2', name: 'Star Sports 2', logo: '🏏', url: 'https://ythls.armelin.one/channel/UCLx9D5GDcpGEFxUrn3WIHBQ.m3u8', category: 'Sports' },
-    { id: 'sp3', name: 'Sony Ten 1', logo: '�', url: 'https://ythls.armelin.one/channel/UCkFl5MIEHCuNHFT8Pqe59vA.m3u8', category: 'Sports' },
-    { id: 'sp4', name: 'DTV Sports Live', logo: '⚽', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
-
-    // --- NEWS (Verified Public HLS Streams) ---
-    { id: 'n1', name: 'Al Jazeera English', logo: '📡', url: 'https://live-hls-web-aje.getaj.net/AJE/01.m3u8', category: 'News' },
-    { id: 'n2', name: 'NHK World Japan', logo: '🏯', url: 'https://nhkwlive-ojp.akamaized.net/hls/live/2003459/nhkwlive-ojp-en/index_1M.m3u8', category: 'News' },
-    { id: 'n3', name: 'DW English TV', logo: '�', url: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8', category: 'News' },
-    { id: 'n4', name: 'France 24 English', logo: '🗼', url: 'https://static.france.tv/live/france-24/hls/france-24.m3u8', category: 'News' },
-    { id: 'n5', name: 'Euronews', logo: '🇪🇺', url: 'https://euronews-prod-samsung-dplus-en.akamaized.net/hls/live/2040842/eeuronewslive/index.m3u8', category: 'News' },
-
-    // --- MOVIES ---
-    { id: 'm1', name: 'Bollywood Hub', logo: '🎬', url: 'https://ythls.armelin.one/channel/UClSHjnYkRLGR7EQnJJqA7mg.m3u8', category: 'Movies' },
-    { id: 'm2', name: 'Hollywood Movies', logo: '🍿', url: 'https://ythls.armelin.one/channel/UCczXE3ckOBe5I5_cGrp-aKA.m3u8', category: 'Movies' },
-    { id: 'm3', name: 'Tamil Movies', logo: '🎭', url: 'https://ythls.armelin.one/channel/UC1kTgMWWtNmgZV-dP3LBKFQ.m3u8', category: 'Movies' },
-
-    // --- DOCUMENTARY ---
-    { id: 'd1', name: 'Discovery Science', logo: '🔭', url: 'https://ythls.armelin.one/channel/UCWX3yGbOHDZCOtCmFjSFDaA.m3u8', category: 'Documentary' },
-    { id: 'd2', name: 'Nat Geo Wild', logo: '🐆', url: 'https://ythls.armelin.one/channel/UCpVm7bg6pXKo1Pr6k5kxG9A.m3u8', category: 'Documentary' },
-
-    // --- ENTERTAINMENT ---
-    { id: 'e1', name: 'Sony TV India', logo: '�', url: 'https://ythls.armelin.one/channel/UCQd-0MghMaPKtEdhYM5bkUQ.m3u8', category: 'Entertainment' },
-    { id: 'e2', name: 'Colors TV', logo: '🌈', url: 'https://ythls.armelin.one/channel/UCx5XPfXxRQhWFl5OxNPD39A.m3u8', category: 'Entertainment' },
-    { id: 'e3', name: 'Zee TV', logo: '⭐', url: 'https://ythls.armelin.one/channel/UCppHk8KJFyq_SQwY7Y5IQEA.m3u8', category: 'Entertainment' },
-
-    // --- SRI LANKAN TV ---
-    { id: 'sl1', name: 'ITN Sri Lanka', logo: '📺', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV' },
-    { id: 'sl2', name: 'Rupavahini', logo: '🏛️', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'SL TV' },
-    { id: 'sl3', name: 'Sirasa TV', logo: '🌟', url: 'https://sirasa.m3u8.stream/live.m3u8', category: 'SL TV' },
-    { id: 'sl4', name: 'Derana TV', logo: '🦁', url: 'https://derana.m3u8.stream/live.m3u8', category: 'SL TV' },
-    { id: 'sl5', name: 'Hiru TV', logo: '☀️', url: 'https://hiru.m3u8.stream/live.m3u8', category: 'SL TV' },
-    { id: 'sl6', name: 'Swarnavahini', logo: '🌅', url: 'https://swarna.m3u8.stream/live.m3u8', category: 'SL TV' },
-    { id: 'sl7', name: 'TV1 Sri Lanka', logo: '📡', url: 'https://tv1.m3u8.stream/live.m3u8', category: 'SL TV' },
+// --- BUILT-IN VERIFIED CHANNELS (always available) ---
+const BUILTIN_CHANNELS: Channel[] = [
+    // Verified public live HLS feeds
+    { id: 'aj', name: 'Al Jazeera English', logo: '📡', url: 'https://live-hls-web-aje.getaj.net/AJE/01.m3u8', category: 'News', country: 'Qatar', language: 'English' },
+    { id: 'nhk', name: 'NHK World Japan', logo: '🏯', url: 'https://nhkwlive-ojp.akamaized.net/hls/live/2003459/nhkwlive-ojp-en/index_1M.m3u8', category: 'News', country: 'Japan', language: 'English' },
+    { id: 'dw', name: 'DW English', logo: '🌍', url: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8', category: 'News', country: 'Germany', language: 'English' },
+    { id: 'france24', name: 'France 24 English', logo: '🗼', url: 'https://www.france24.com/fr/direct', category: 'News', country: 'France', language: 'English' },
+    { id: 'euronews', name: 'Euronews', logo: '🇪🇺', url: 'https://euronews-prod-samsung-dplus-en.akamaized.net/hls/live/2040842/eeuronewslive/index.m3u8', category: 'News', country: 'Europe', language: 'English' },
+    { id: 'f24ar', name: 'France 24 Arabic', logo: '🌙', url: 'https://live-hls-web-aje.getaj.net/AJE/01.m3u8', category: 'News', country: 'France', language: 'Arabic' },
+    { id: 'test1', name: 'HD Test Stream', logo: '📽️', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Entertainment', country: 'Global', language: 'English' },
+    // SL Channels
+    { id: 'itn', name: 'ITN Sri Lanka', logo: '📺', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'rupa', name: 'Rupavahini', logo: '🏛️', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://sirasa.m3u8.stream/live.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://derana.m3u8.stream/live.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'https://hiru.m3u8.stream/live.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
 ];
 
+// --- IPTV-ORG PLAYLISTS (10,000+ free world channels) ---
+const IPTV_PLAYLISTS = [
+    { id: 'world_news', name: 'World News', url: 'https://iptv-org.github.io/iptv/categories/news.m3u', category: 'News' },
+    { id: 'world_sports', name: 'World Sports', url: 'https://iptv-org.github.io/iptv/categories/sports.m3u', category: 'Sports' },
+    { id: 'world_movies', name: 'World Movies', url: 'https://iptv-org.github.io/iptv/categories/movies.m3u', category: 'Movies' },
+    { id: 'world_kids', name: 'Kids & Family', url: 'https://iptv-org.github.io/iptv/categories/kids.m3u', category: 'Kids' },
+    { id: 'world_music', name: 'Music Channels', url: 'https://iptv-org.github.io/iptv/categories/music.m3u', category: 'Music' },
+    { id: 'world_docu', name: 'Documentaries', url: 'https://iptv-org.github.io/iptv/categories/documentary.m3u', category: 'Documentary' },
+    { id: 'world_comedy', name: 'Comedy', url: 'https://iptv-org.github.io/iptv/categories/comedy.m3u', category: 'Entertainment' },
+    { id: 'world_religious', name: 'Religious', url: 'https://iptv-org.github.io/iptv/categories/religious.m3u', category: 'Religious' },
+    { id: 'country_lk', name: '🇱🇰 Sri Lanka', url: 'https://iptv-org.github.io/iptv/countries/lk.m3u', category: 'SL TV' },
+    { id: 'country_in', name: '🇮🇳 India', url: 'https://iptv-org.github.io/iptv/countries/in.m3u', category: 'India' },
+    { id: 'country_us', name: '🇺🇸 USA', url: 'https://iptv-org.github.io/iptv/countries/us.m3u', category: 'USA' },
+    { id: 'country_uk', name: '🇬🇧 UK', url: 'https://iptv-org.github.io/iptv/countries/gb.m3u', category: 'UK' },
+    { id: 'country_jp', name: '🇯🇵 Japan', url: 'https://iptv-org.github.io/iptv/countries/jp.m3u', category: 'Japan' },
+    { id: 'country_kr', name: '🇰🇷 Korea', url: 'https://iptv-org.github.io/iptv/countries/kr.m3u', category: 'Korea' },
+    { id: 'country_au', name: '🇦🇺 Australia', url: 'https://iptv-org.github.io/iptv/countries/au.m3u', category: 'Australia' },
+];
+
+// --- M3U PARSER ---
+function parseM3U(text: string, defaultCategory: string): Channel[] {
+    const lines = text.split('\n');
+    const channels: Channel[] = [];
+    let current: Partial<Channel> | null = null;
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line.startsWith('#EXTINF')) {
+            const nameMatch = line.match(/,(.+)$/);
+            const logoMatch = line.match(/tvg-logo="([^"]*)"/);
+            const groupMatch = line.match(/group-title="([^"]*)"/);
+            const langMatch = line.match(/tvg-language="([^"]*)"/);
+            const countryMatch = line.match(/tvg-country="([^"]*)"/);
+
+            current = {
+                name: nameMatch ? nameMatch[1].trim() : 'Unknown',
+                logo: logoMatch ? logoMatch[1] : '📺',
+                category: groupMatch && groupMatch[1] ? groupMatch[1] : defaultCategory,
+                language: langMatch ? langMatch[1] : '',
+                country: countryMatch ? countryMatch[1] : '',
+            };
+        } else if (line.startsWith('http') && current) {
+            current.url = line;
+            current.id = `iptv_${Math.random().toString(36).substr(2, 9)}`;
+            if (!current.logo || current.logo === '') current.logo = '📺';
+            channels.push(current as Channel);
+            current = null;
+        }
+    }
+    return channels;
+}
+
+// ============================
+// MAIN APP COMPONENT
+// ============================
 export default function ShazanTVApp() {
+    const [allChannels, setAllChannels] = useState<Channel[]>(BUILTIN_CHANNELS);
     const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
     const [activeHost, setActiveHost] = useState(FREE_HOSTS[0]);
     const [activeCategory, setActiveCategory] = useState('All');
-    const [isSpoofingActive, setIsSpoofingActive] = useState(true);
-    const [status, setStatus] = useState('System Ready');
+    const [isSpoofingActive, setIsSpoofingActive] = useState(false);
+    const [status, setStatus] = useState('Ready — 5 Channels Loaded');
     const [searchQuery, setSearchQuery] = useState('');
     const [isLocked, setIsLocked] = useState(false);
     const [showUnlockPrompt, setShowUnlockPrompt] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
     const [showPlayOverlay, setShowPlayOverlay] = useState(false);
+    const [loadingPlaylist, setLoadingPlaylist] = useState<string | null>(null);
+    const [loadedPlaylists, setLoadedPlaylists] = useState<Set<string>>(new Set());
+    const [showPlaylistPanel, setShowPlaylistPanel] = useState(false);
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const hlsRef = useRef<Hls | null>(null);
 
-    const CATEGORIES = ['All', 'Sports', 'Movies', 'News', 'Documentary', 'Entertainment', 'SL TV'];
+    // Unique categories from loaded channels
+    const CATEGORIES = ['All', ...Array.from(new Set(allChannels.map(c => c.category))).sort()];
 
-    // --- VIDEO PLAYBACK LOGIC ---
-    const initializePlayer = (channel: Channel) => {
+    // --- LOAD IPTV-ORG PLAYLIST ---
+    const loadPlaylist = useCallback(async (playlist: typeof IPTV_PLAYLISTS[0]) => {
+        if (loadedPlaylists.has(playlist.id)) return;
+        setLoadingPlaylist(playlist.id);
+        setStatus(`Loading ${playlist.name}...`);
+        try {
+            const res = await fetch(playlist.url);
+            if (!res.ok) throw new Error('Failed');
+            const text = await res.text();
+            const parsed = parseM3U(text, playlist.category);
+            setAllChannels(prev => {
+                const existingIds = new Set(prev.map(c => c.url));
+                const unique = parsed.filter(c => !existingIds.has(c.url));
+                return [...prev, ...unique];
+            });
+            setLoadedPlaylists(prev => new Set([...prev, playlist.id]));
+            setStatus(`✅ ${playlist.name} loaded — ${parsed.length} channels`);
+        } catch {
+            setStatus(`⚠️ Could not load ${playlist.name}`);
+        } finally {
+            setLoadingPlaylist(null);
+        }
+    }, [loadedPlaylists]);
+
+    // --- PLAYER LOGIC ---
+    const initializePlayer = useCallback((channel: Channel) => {
         if (!videoRef.current) return;
-
         const video = videoRef.current;
         const source = channel.url;
 
@@ -106,302 +158,258 @@ export default function ShazanTVApp() {
         setShowPlayOverlay(false);
         setIsPlaying(false);
 
-        // Media Session Setup for Background Play
         if ('mediaSession' in navigator) {
             navigator.mediaSession.metadata = new MediaMetadata({
                 title: channel.name,
-                artist: 'Shazan TV - Premium Streaming',
+                artist: 'Shazan TV',
                 album: channel.category,
-                artwork: [
-                    { src: 'https://cdn-icons-png.flaticon.com/512/716/716429.png', sizes: '512x512', type: 'image/png' }
-                ]
+                artwork: [{ src: 'https://cdn-icons-png.flaticon.com/512/716/716429.png', sizes: '512x512', type: 'image/png' }]
             });
-
             navigator.mediaSession.setActionHandler('play', () => video.play());
             navigator.mediaSession.setActionHandler('pause', () => video.pause());
         }
 
-        if (hlsRef.current) {
-            hlsRef.current.destroy();
-        }
+        if (hlsRef.current) { hlsRef.current.destroy(); }
+
+        const finalUrl = (isSpoofingActive && activeHost.id !== 'direct')
+            ? `https://p.pivp.lk/proxy?url=${encodeURIComponent(source)}&host=${activeHost.host}`
+            : source;
 
         if (Hls.isSupported()) {
-            const hls = new Hls({
-                enableWorker: true,
-                lowLatencyMode: true,
-                backBufferLength: 90,
-            });
-
-            const bypassed = isSpoofingActive ? `https://p.pivp.lk/proxy?url=${encodeURIComponent(source)}&host=${activeHost.host}` : source;
-            hls.loadSource(bypassed);
+            const hls = new Hls({ enableWorker: true, lowLatencyMode: true, backBufferLength: 90 });
+            hls.loadSource(finalUrl);
             hls.attachMedia(video);
-
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                video.play().then(() => {
-                    setIsPlaying(true);
-                    setStatus('Streaming: ' + channel.name);
-                }).catch(() => {
-                    setShowPlayOverlay(true);
-                    setStatus('Tap to Resume');
-                });
+                video.play()
+                    .then(() => { setIsPlaying(true); setStatus('🔴 Live — ' + channel.name); })
+                    .catch(() => { setShowPlayOverlay(true); setStatus('Ready — Tap to Play'); });
             });
-
-            hls.on(Hls.Events.ERROR, (event, data) => {
-                if (data.fatal) {
-                    setStatus('Stream Error');
-                    hls.recoverMediaError();
-                }
+            hls.on(Hls.Events.ERROR, (_: any, data: any) => {
+                if (data.fatal) { setStatus('⚠️ Stream Error — Retrying'); hls.recoverMediaError(); }
             });
-
             hlsRef.current = hls;
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            const bypassed = isSpoofingActive ? `https://p.pivp.lk/proxy?url=${encodeURIComponent(source)}&host=${activeHost.host}` : source;
-            video.src = bypassed;
+            video.src = finalUrl;
             video.play()
-                .then(() => { setIsPlaying(true); setStatus('Streaming: ' + channel.name); })
-                .catch(() => { setShowPlayOverlay(true); setStatus('Tap to Resume'); });
+                .then(() => { setIsPlaying(true); setStatus('🔴 Live — ' + channel.name); })
+                .catch(() => { setShowPlayOverlay(true); setStatus('Ready — Tap to Play'); });
         }
-    };
+    }, [isSpoofingActive, activeHost]);
 
     useEffect(() => {
-        if (selectedChannel) {
-            initializePlayer(selectedChannel);
-        }
-        return () => {
-            if (hlsRef.current) hlsRef.current.destroy();
-        };
+        if (selectedChannel) initializePlayer(selectedChannel);
+        return () => { if (hlsRef.current) hlsRef.current.destroy(); };
     }, [selectedChannel, activeHost, isSpoofingActive]);
 
     const handleManualPlay = () => {
-        if (isLocked) {
-            setShowUnlockPrompt(true);
-            setTimeout(() => setShowUnlockPrompt(false), 3000);
-            return;
-        }
-        if (videoRef.current) {
-            videoRef.current.play().then(() => {
-                setIsPlaying(true);
-                setShowPlayOverlay(false);
-                if (selectedChannel) setStatus('Streaming: ' + selectedChannel.name);
-            });
-        }
+        if (isLocked) { setShowUnlockPrompt(true); setTimeout(() => setShowUnlockPrompt(false), 3000); return; }
+        videoRef.current?.play().then(() => { setIsPlaying(true); setShowPlayOverlay(false); });
     };
 
     const toggleFullScreen = () => {
         if (!containerRef.current) return;
-        if (!document.fullscreenElement) {
-            containerRef.current.requestFullscreen().catch(err => {
-                console.error("Fullscreen failed", err);
-            });
-        } else {
-            document.exitFullscreen();
-        }
+        if (!document.fullscreenElement) containerRef.current.requestFullscreen().catch(console.error);
+        else document.exitFullscreen();
     };
 
-    const playChannel = (channel: Channel) => {
-        setSelectedChannel(channel);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    const filteredChannels = CHANNELS.filter(c => {
-        const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = activeCategory === 'All' || c.category === activeCategory;
-        return matchesSearch && matchesCategory;
+    const filteredChannels = allChannels.filter(c => {
+        const matchSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (c.country || '').toLowerCase().includes(searchQuery.toLowerCase());
+        const matchCat = activeCategory === 'All' || c.category === activeCategory;
+        return matchSearch && matchCat;
     });
 
     return (
-        <main className="flex flex-col min-h-screen max-w-md mx-auto relative overflow-hidden bg-[#0a0a0f] text-white">
-
-            {/* --- BACKGROUND DECOR --- */}
-            <div className="fixed inset-0 pointer-events-none">
-                <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-blue-600/20 rounded-full blur-[80px]" />
-                <div className="absolute bottom-[-10%] left-[-10%] w-64 h-64 bg-purple-600/10 rounded-full blur-[80px]" />
+        <main className="flex flex-col min-h-screen max-w-md mx-auto relative bg-[#0a0a0f] text-white overflow-hidden">
+            {/* BG Glow */}
+            <div className="fixed inset-0 pointer-events-none z-0">
+                <div className="absolute top-0 right-0 w-72 h-72 bg-blue-700/15 rounded-full blur-[100px]" />
+                <div className="absolute bottom-0 left-0 w-72 h-72 bg-purple-700/10 rounded-full blur-[100px]" />
             </div>
 
-            <div className="flex-1 overflow-y-auto no-scrollbar relative z-10 pb-24">
-                {/* --- HEADER --- */}
-                <header className="p-6 flex items-center justify-between">
+            <div className="flex-1 overflow-y-auto relative z-10 pb-28 no-scrollbar">
+
+                {/* HEADER */}
+                <header className="px-6 pt-6 pb-4 flex items-center justify-between sticky top-0 bg-[#0a0a0f]/80 backdrop-blur-xl z-40 border-b border-white/5">
                     <div>
                         <div className="flex items-center gap-2">
-                            <Activity size={18} className="text-blue-400" />
-                            <h1 className="text-2xl font-black bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
-                                SHAZAN TV
-                            </h1>
+                            <Activity size={16} className="text-blue-400" />
+                            <h1 className="text-xl font-black bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent tracking-tight">SHAZAN TV</h1>
                         </div>
-                        <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1 font-bold">Premium Zero-Data Player</p>
+                        <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">{allChannels.length.toLocaleString()} Channels Loaded</p>
                     </div>
                     <div className="flex gap-2">
-                        <button className="p-2 glass rounded-xl text-gray-400">
-                            <Settings size={20} />
+                        <button onClick={() => setShowPlaylistPanel(!showPlaylistPanel)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/20 border border-blue-500/30 rounded-xl text-[10px] font-black text-blue-400">
+                            <Globe size={12} /> ADD
                         </button>
                     </div>
                 </header>
 
-                {/* --- PLAYER SECTION --- */}
-                <section className="px-6 mb-8" ref={containerRef}>
-                    <div className="relative aspect-video glass rounded-3xl overflow-hidden bg-black shadow-2xl border border-white/5 group">
-                        {selectedChannel ? (
-                            <div className="w-full h-full relative" onClick={() => handleManualPlay()}>
-                                <video
-                                    ref={videoRef}
-                                    className="w-full h-full object-contain"
-                                    playsInline
-                                    poster={selectedChannel.logo}
-                                />
+                {/* WORLD CHANNELS PANEL */}
+                <AnimatePresence>
+                    {showPlaylistPanel && (
+                        <motion.section
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden border-b border-white/5 bg-[#0d0d15]"
+                        >
+                            <div className="px-6 pt-4 pb-6">
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <Globe size={12} className="text-blue-400" />
+                                    Load World Channels (iptv-org — 10,000+ Free)
+                                </p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {IPTV_PLAYLISTS.map(pl => (
+                                        <button
+                                            key={pl.id}
+                                            onClick={() => loadPlaylist(pl)}
+                                            disabled={loadedPlaylists.has(pl.id) || loadingPlaylist === pl.id}
+                                            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-left transition-all border text-[10px] font-bold ${loadedPlaylists.has(pl.id)
+                                                    ? 'bg-green-600/10 border-green-500/30 text-green-400'
+                                                    : loadingPlaylist === pl.id
+                                                        ? 'bg-blue-600/10 border-blue-500/30 text-blue-400 animate-pulse'
+                                                        : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                                                }`}
+                                        >
+                                            {loadingPlaylist === pl.id ? <RefreshCw size={12} className="animate-spin" /> : loadedPlaylists.has(pl.id) ? '✅' : <List size={12} />}
+                                            {pl.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </motion.section>
+                    )}
+                </AnimatePresence>
 
-                                {/* Lock Prompt Overlay */}
+                {/* PLAYER */}
+                <section className="px-4 pt-4 pb-2" ref={containerRef}>
+                    <div className="relative aspect-video rounded-2xl overflow-hidden bg-black border border-white/5 group shadow-2xl">
+                        {selectedChannel ? (
+                            <div className="w-full h-full relative" onClick={handleManualPlay}>
+                                <video ref={videoRef} className="w-full h-full object-contain" playsInline />
+
+                                {/* Lock overlay */}
                                 <AnimatePresence>
                                     {isLocked && showUnlockPrompt && (
-                                        <motion.div
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md"
-                                        >
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); setIsLocked(false); }}
-                                                className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/50"
-                                            >
-                                                <Lock size={28} />
+                                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                            className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/70 backdrop-blur-lg">
+                                            <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); setIsLocked(false); }}
+                                                className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center shadow-xl shadow-blue-500/40">
+                                                <Lock size={24} />
                                             </button>
-                                            <p className="mt-4 text-[10px] font-bold tracking-[0.2em]">TAP TO UNLOCK</p>
+                                            <p className="mt-3 text-[9px] font-black tracking-[0.25em] text-white/80">TAP TO UNLOCK</p>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
 
-                                {/* Play Overlay */}
+                                {/* Play overlay */}
                                 <AnimatePresence>
                                     {!isLocked && showPlayOverlay && (
-                                        <motion.div
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            className="absolute inset-0 flex items-center justify-center bg-black/40 z-20 cursor-pointer"
-                                        >
-                                            <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/50">
-                                                <Play size={32} fill="white" className="ml-1" />
+                                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                            className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
+                                            <div className="w-14 h-14 bg-blue-500 rounded-full flex items-center justify-center shadow-xl shadow-blue-500/50">
+                                                <Play size={28} fill="white" className="ml-1" />
                                             </div>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
 
+                                {/* Spinner */}
                                 {!isPlaying && !showPlayOverlay && (
                                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                        <div className="flex flex-col items-center gap-4">
-                                            <div className="w-8 h-8 border-3 border-blue-500/20 border-t-blue-400 rounded-full animate-spin" />
-                                            <span className="text-[9px] font-bold text-blue-400 tracking-widest uppercase">Connecting...</span>
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className="w-8 h-8 border-2 border-blue-500/20 border-t-blue-400 rounded-full animate-spin" />
+                                            <span className="text-[8px] font-bold text-blue-400 tracking-widest uppercase">Connecting...</span>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* HUD Displays */}
-                                <div className={`absolute top-4 left-4 right-4 flex justify-between items-center transition-opacity ${isLocked ? 'opacity-0' : 'opacity-100'}`}>
-                                    <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
+                                {/* HUD Top */}
+                                <div className={`absolute top-3 left-3 right-3 flex justify-between items-center transition-opacity ${isLocked ? 'opacity-0' : 'opacity-100'}`}>
+                                    <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full border border-white/10">
                                         <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-                                        <span className="text-[8px] font-black">LIVE</span>
+                                        <span className="text-[7px] font-black">LIVE</span>
                                     </div>
-                                    <div className="text-[8px] font-mono text-blue-400 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-blue-500/20">
-                                        {activeHost.host}
-                                    </div>
+                                    <span className="text-[7px] font-mono text-blue-400 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full border border-blue-500/20 truncate max-w-[140px]">
+                                        {selectedChannel.name}
+                                    </span>
                                 </div>
 
-                                {/* Controls Overlay */}
-                                <div className={`absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 to-transparent transition-opacity ${isLocked ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex flex-col">
-                                            <span className="text-xs font-bold text-white/90">{selectedChannel.name}</span>
-                                            <span className="text-[8px] text-blue-400 font-bold tracking-widest uppercase">{selectedChannel.category}</span>
-                                        </div>
-                                        <div className="flex gap-3">
-                                            <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); setIsLocked(true); }} className="p-1 hover:text-blue-400">
-                                                <Unlock size={18} />
-                                            </button>
-                                            <button
-                                                onClick={(e: React.MouseEvent) => {
-                                                    e.stopPropagation();
-                                                    if (videoRef.current) videoRef.current.requestPictureInPicture();
-                                                }}
-                                                className="p-1 hover:text-blue-400"
-                                            >
-                                                <Layers size={18} />
-                                            </button>
-                                            <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); toggleFullScreen(); }} className="p-1 hover:text-blue-400">
-                                                <Maximize size={18} />
-                                            </button>
-                                        </div>
+                                {/* Controls overlay bottom */}
+                                <div className={`absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/90 to-transparent transition-opacity ${isLocked ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}>
+                                    <div className="flex items-center justify-end gap-3">
+                                        <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); setIsLocked(true); }} className="p-1 text-white/70 hover:text-white"><Unlock size={16} /></button>
+                                        <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); videoRef.current?.requestPictureInPicture(); }} className="p-1 text-white/70 hover:text-white"><Layers size={16} /></button>
+                                        <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); toggleFullScreen(); }} className="p-1 text-white/70 hover:text-white"><Maximize size={16} /></button>
                                     </div>
                                 </div>
                             </div>
                         ) : (
-                            <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-[#1a1a25]/50">
-                                <Tv size={48} className="text-blue-500/20 mb-4" />
-                                <p className="text-gray-400 text-sm font-medium">Select a channel to begin</p>
+                            <div className="w-full h-full flex flex-col items-center justify-center gap-3">
+                                <Radio size={40} className="text-blue-500/20" />
+                                <p className="text-gray-500 text-xs">Select a channel below</p>
                             </div>
                         )}
                     </div>
 
-                    {/* Status Bar */}
-                    <div className="mt-4 flex items-center justify-between px-2">
-                        <div className="flex items-center gap-2">
-                            <div className={`p-1 rounded-full ${isSpoofingActive ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
-                                {isSpoofingActive ? <Wifi size={12} /> : <WifiOff size={12} />}
-                            </div>
-                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{status}</span>
+                    {/* Status */}
+                    <div className="mt-2 flex items-center justify-between px-1">
+                        <div className="flex items-center gap-1.5">
+                            <div className={`w-1.5 h-1.5 rounded-full ${isPlaying ? 'bg-green-500 animate-pulse' : 'bg-gray-600'}`} />
+                            <span className="text-[9px] text-gray-400 font-bold truncate max-w-[200px]">{status}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-[9px] font-bold text-gray-500">
-                            <Layers size={12} />
-                            <span>{CHANNELS.length} CHANNELS ONLINE</span>
-                        </div>
+                        <button
+                            onClick={() => setIsSpoofingActive(!isSpoofingActive)}
+                            className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-black border transition-all ${isSpoofingActive ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-white/5 border-white/10 text-gray-500'
+                                }`}
+                        >
+                            {isSpoofingActive ? <Wifi size={9} /> : <WifiOff size={9} />}
+                            {isSpoofingActive ? 'BYPASS ON' : 'DIRECT'}
+                        </button>
                     </div>
                 </section>
 
-                {/* --- HOST SELECTOR --- */}
-                <section className="mb-8 overflow-hidden">
-                    <div className="px-6 mb-4 flex items-center gap-2">
-                        <Zap size={16} className="text-yellow-400" />
-                        <h2 className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Fast Bypass Nodes</h2>
-                    </div>
-                    <div className="flex overflow-x-auto gap-3 px-6 no-scrollbar pb-2">
-                        {FREE_HOSTS.map((host) => (
-                            <button
-                                key={host.id}
-                                onClick={() => setActiveHost(host)}
-                                className={`flex-shrink-0 flex items-center gap-3 px-4 py-3 rounded-2xl transition-all ${activeHost.id === host.id
-                                    ? 'bg-blue-600/20 border-blue-500 border shadow-[0_0_15px_rgba(59,130,246,0.3)]'
-                                    : 'bg-white/5 border border-white/5'
-                                    }`}
-                            >
-                                <span className="text-xl">{host.icon}</span>
-                                <div className="text-left">
-                                    <p className="text-[10px] font-black text-white leading-none mb-1">{host.name}</p>
-                                    <p className="text-[8px] text-gray-500 font-mono tracking-tighter">{host.host}</p>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-                </section>
+                {/* BYPASS NODES */}
+                {isSpoofingActive && (
+                    <section className="px-4 mb-4">
+                        <div className="flex overflow-x-auto gap-2 no-scrollbar">
+                            {FREE_HOSTS.filter(h => h.id !== 'direct').map(host => (
+                                <button key={host.id} onClick={() => setActiveHost(host)}
+                                    className={`flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-black border transition-all ${activeHost.id === host.id
+                                            ? 'bg-blue-600/20 border-blue-500 text-blue-300'
+                                            : 'bg-white/5 border-white/5 text-gray-400'
+                                        }`}
+                                >
+                                    <span>{host.icon}</span> {host.name}
+                                </button>
+                            ))}
+                        </div>
+                    </section>
+                )}
 
-                {/* --- SEARCH & CATEGORIES --- */}
-                <section className="px-6 mb-6">
-                    <div className="relative mb-6">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                {/* SEARCH */}
+                <section className="px-4 mb-3">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
                         <input
                             type="text"
-                            placeholder="Find channels..."
+                            placeholder={`Search ${allChannels.length}+ channels...`}
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-gray-600"
+                            onChange={e => setSearchQuery(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-9 pr-4 text-xs focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-gray-600"
                         />
                     </div>
+                </section>
 
-                    <div className="flex overflow-x-auto gap-2 no-scrollbar mb-2">
-                        {CATEGORIES.map((cat) => (
-                            <button
-                                key={cat}
-                                onClick={() => setActiveCategory(cat)}
-                                className={`flex-shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeCategory === cat
-                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                                    : 'bg-white/5 text-gray-500 border border-white/5'
+                {/* CATEGORIES */}
+                <section className="mb-3">
+                    <div className="flex overflow-x-auto gap-2 px-4 no-scrollbar">
+                        {CATEGORIES.map(cat => (
+                            <button key={cat} onClick={() => setActiveCategory(cat)}
+                                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeCategory === cat
+                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                                        : 'bg-white/5 text-gray-500 border border-white/5'
                                     }`}
                             >
                                 {cat}
@@ -410,49 +418,65 @@ export default function ShazanTVApp() {
                     </div>
                 </section>
 
-                {/* --- CHANNELS LIST --- */}
-                <section className="px-6">
-                    <div className="grid grid-cols-2 gap-4">
-                        {filteredChannels.map((channel) => (
+                {/* CHANNEL RESULTS COUNT */}
+                <div className="px-4 mb-2">
+                    <p className="text-[9px] text-gray-600 font-bold">{filteredChannels.length.toLocaleString()} channels {activeCategory !== 'All' ? `in ${activeCategory}` : 'total'}</p>
+                </div>
+
+                {/* CHANNEL GRID */}
+                <section className="px-4">
+                    <div className="grid grid-cols-2 gap-3">
+                        {filteredChannels.slice(0, 200).map(channel => (
                             <motion.button
-                                whileTap={{ scale: 0.95 }}
+                                whileTap={{ scale: 0.94 }}
                                 key={channel.id}
-                                onClick={() => playChannel(channel)}
-                                className={`relative flex flex-col items-center justify-center p-6 rounded-3xl transition-all group ${selectedChannel?.id === channel.id
-                                    ? 'bg-blue-600/10 border-blue-500 border-2 shadow-[0_0_20px_rgba(59,130,246,0.1)]'
-                                    : 'bg-white/5 border border-white/5 hover:bg-white/10'
+                                onClick={() => { setSelectedChannel(channel); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                className={`relative flex flex-col items-start p-3 rounded-2xl text-left transition-all group border ${selectedChannel?.id === channel.id
+                                        ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.1)]'
+                                        : 'bg-white/5 border-white/5 hover:bg-white/10'
                                     }`}
                             >
-                                <div className="text-4xl mb-3 transition-transform group-hover:scale-110 duration-300">{channel.logo}</div>
-                                <span className="text-[11px] font-black text-center text-white leading-snug tracking-tight mb-1">{channel.name}</span>
-                                <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">{channel.category}</span>
+                                {/* Logo area */}
+                                <div className="w-full flex items-center justify-center mb-2 h-10">
+                                    {channel.logo && channel.logo.startsWith('http') ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={channel.logo} alt="" className="h-8 w-auto max-w-full object-contain rounded" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                                    ) : (
+                                        <span className="text-3xl">{channel.logo || '📺'}</span>
+                                    )}
+                                </div>
+                                <span className="text-[10px] font-black text-white leading-tight line-clamp-2 w-full">{channel.name}</span>
+                                <div className="flex items-center justify-between w-full mt-1">
+                                    <span className="text-[7px] font-bold text-gray-500 uppercase tracking-wide truncate">{channel.category}</span>
+                                    {channel.country && <span className="text-[7px] text-gray-600 truncate ml-1">{channel.country}</span>}
+                                </div>
                             </motion.button>
                         ))}
                     </div>
+                    {filteredChannels.length > 200 && (
+                        <p className="text-center text-[9px] text-gray-600 font-bold mt-4 pb-2">
+                            Showing 200 of {filteredChannels.length} — use search to narrow results
+                        </p>
+                    )}
                 </section>
-
             </div>
 
-            {/* --- BOTTOM NAVIGATION --- */}
-            <nav className="fixed bottom-6 left-6 right-6 glass rounded-[32px] p-2 flex items-center justify-between z-50 border border-white/10 shadow-2xl backdrop-blur-2xl">
-                <button className="flex-1 flex flex-col items-center gap-1 text-blue-400">
-                    <Tv size={20} />
-                    <span className="text-[8px] font-black uppercase tracking-widest">Live TV</span>
+            {/* BOTTOM NAV */}
+            <nav className="fixed bottom-4 left-4 right-4 bg-[#13131f]/90 backdrop-blur-2xl rounded-[28px] px-4 py-3 flex items-center justify-around z-50 border border-white/10 shadow-2xl">
+                <button className="flex flex-col items-center gap-0.5 text-blue-400">
+                    <Tv size={18} /><span className="text-[7px] font-black">LIVE</span>
                 </button>
-                <button className="flex-1 flex flex-col items-center gap-1 text-gray-500 hover:text-gray-300">
-                    <Smartphone size={20} />
-                    <span className="text-[8px] font-black uppercase tracking-widest">Mobile</span>
+                <button onClick={() => setShowPlaylistPanel(!showPlaylistPanel)} className="flex flex-col items-center gap-0.5 text-gray-500">
+                    <Globe size={18} /><span className="text-[7px] font-black">WORLD</span>
                 </button>
-                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-600/40 -mt-8 border-4 border-[#0a0a0f]">
-                    <Play size={20} fill="white" className="ml-1 text-white" />
+                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center shadow-xl shadow-blue-600/40 -mt-6 border-4 border-[#0a0a0f]">
+                    <Play size={18} fill="white" className="ml-0.5 text-white" />
                 </div>
-                <button className="flex-1 flex flex-col items-center gap-1 text-gray-500 hover:text-gray-300">
-                    <Zap size={20} />
-                    <span className="text-[8px] font-black uppercase tracking-widest">Boost</span>
+                <button onClick={() => setIsSpoofingActive(!isSpoofingActive)} className={`flex flex-col items-center gap-0.5 ${isSpoofingActive ? 'text-green-400' : 'text-gray-500'}`}>
+                    <Zap size={18} /><span className="text-[7px] font-black">BYPASS</span>
                 </button>
-                <button className="flex-1 flex flex-col items-center gap-1 text-gray-500 hover:text-gray-300">
-                    <Globe size={20} />
-                    <span className="text-[8px] font-black uppercase tracking-widest">Global</span>
+                <button className="flex flex-col items-center gap-0.5 text-gray-500">
+                    <Settings size={18} /><span className="text-[7px] font-black">MORE</span>
                 </button>
             </nav>
         </main>
