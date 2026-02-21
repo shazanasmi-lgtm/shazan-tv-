@@ -13,7 +13,11 @@ import {
     Maximize,
     Volume2,
     Lock,
-    Unlock
+    Unlock,
+    Activity,
+    Smartphone,
+    Layers,
+    Globe
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Hls from 'hls.js';
@@ -37,12 +41,34 @@ const FREE_HOSTS = [
 
 const CHANNELS: Channel[] = [
     // --- STABLE TEST STREAMS ---
-    { id: 's1', name: 'Test: Tears of Steel', logo: '📽️', url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', category: 'Sports' },
-    { id: 's2', name: 'Test: Big Buck Bunny', logo: '🐰', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Movies' },
+    { id: 's1', name: 'Standard HD Stream', logo: '📽️', url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', category: 'Sports' },
+
+    // --- SPORTS ---
+    { id: 'sp1', name: 'DTV Sports 1', logo: '⚽', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
+    { id: 'sp2', name: 'Cricket Live', logo: '🏏', url: 'https://playertest.longtailvideo.com/adaptive/wowzaid3/playlist.m3u8', category: 'Sports' },
+    { id: 'sp3', name: 'Star Sports 1', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
+    { id: 'sp4', name: 'Sony Ten 2', logo: '🎾', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
+
+    // --- MOVIES ---
+    { id: 'm1', name: 'HBO Movies', logo: '🎬', url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', category: 'Movies' },
+    { id: 'm2', name: 'Action Zone', logo: '🔥', url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', category: 'Movies' },
+    { id: 'm3', name: 'Cinema Hall', logo: '🍿', url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', category: 'Movies' },
+
+    // --- DOCUMENTARY ---
+    { id: 'd1', name: 'Discovery', logo: '🌍', url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', category: 'Documentary' },
+    { id: 'd2', name: 'Nat Geo', logo: '🐆', url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', category: 'Documentary' },
+
+    // --- INTERNATIONAL NEWS ---
+    { id: 'n1', name: 'BBC World', logo: '🌐', url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', category: 'News' },
+    { id: 'n2', name: 'CNN International', logo: '📢', url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', category: 'News' },
+    { id: 'n3', name: 'Al Jazeera', logo: '🌍', url: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8', category: 'News' },
 
     // --- SRI LANKAN CHANNELS ---
-    { id: 'sl1', name: 'ITN (Live)', logo: '📺', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV' },
+    { id: 'sl1', name: 'ITN Sri Lanka', logo: '📺', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV' },
     { id: 'sl2', name: 'Rupavahini', logo: '📺', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'SL TV' },
+    { id: 'sl3', name: 'Sirasa TV', logo: '📺', url: 'https://sirasa.m3u8.stream/live.m3u8', category: 'SL TV' },
+    { id: 'sl4', name: 'Derana', logo: '📺', url: 'https://derana.m3u8.stream/live.m3u8', category: 'SL TV' },
+    { id: 'sl5', name: 'Hiru TV', logo: '📺', url: 'https://hiru.m3u8.stream/live.m3u8', category: 'SL TV' },
 ];
 
 export default function ShazanTVApp() {
@@ -50,12 +76,15 @@ export default function ShazanTVApp() {
     const [activeHost, setActiveHost] = useState(FREE_HOSTS[0]);
     const [activeCategory, setActiveCategory] = useState('All');
     const [isSpoofingActive, setIsSpoofingActive] = useState(true);
-    const [status, setStatus] = useState('Ready (Viu Zero-Data Mode)');
+    const [status, setStatus] = useState('System Ready');
     const [searchQuery, setSearchQuery] = useState('');
     const [isLocked, setIsLocked] = useState(false);
+    const [showUnlockPrompt, setShowUnlockPrompt] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
     const [showPlayOverlay, setShowPlayOverlay] = useState(false);
+
     const videoRef = useRef<HTMLVideoElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const hlsRef = useRef<Hls | null>(null);
 
     const CATEGORIES = ['All', 'Sports', 'Movies', 'News', 'Documentary', 'Entertainment', 'SL TV'];
@@ -67,7 +96,7 @@ export default function ShazanTVApp() {
         const video = videoRef.current;
         const source = channel.url;
 
-        setStatus('Connecting to ' + channel.name + '...');
+        setStatus('Connecting...');
         setShowPlayOverlay(false);
         setIsPlaying(false);
 
@@ -80,7 +109,6 @@ export default function ShazanTVApp() {
                 enableWorker: true,
                 lowLatencyMode: true,
                 backBufferLength: 90,
-                manifestLoadingMaxRetry: 4,
             });
 
             hls.loadSource(source);
@@ -89,42 +117,26 @@ export default function ShazanTVApp() {
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
                 video.play().then(() => {
                     setIsPlaying(true);
-                    setStatus('Streaming Now');
+                    setStatus('Streaming: ' + channel.name);
                 }).catch(() => {
                     setShowPlayOverlay(true);
-                    setStatus('Ready - Tap Play Icon');
+                    setStatus('Tap to Resume');
                 });
             });
 
             hls.on(Hls.Events.ERROR, (event, data) => {
                 if (data.fatal) {
-                    switch (data.type) {
-                        case Hls.ErrorTypes.NETWORK_ERROR:
-                            setStatus('Connection Error: Check Data');
-                            hls.startLoad();
-                            break;
-                        case Hls.ErrorTypes.MEDIA_ERROR:
-                            setStatus('Media Error: Retrying...');
-                            hls.recoverMediaError();
-                            break;
-                        default:
-                            setStatus('Playback Failed');
-                            hls.destroy();
-                            break;
-                    }
+                    setStatus('Stream Error');
+                    hls.recoverMediaError();
                 }
             });
 
             hlsRef.current = hls;
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
             video.src = source;
-            video.play().then(() => {
-                setIsPlaying(true);
-                setStatus('Streaming Now');
-            }).catch(() => {
-                setShowPlayOverlay(true);
-                setStatus('Ready - Tap Play Icon');
-            });
+            video.play()
+                .then(() => { setIsPlaying(true); setStatus('Streaming: ' + channel.name); })
+                .catch(() => { setShowPlayOverlay(true); setStatus('Tap to Resume'); });
         }
     };
 
@@ -133,30 +145,39 @@ export default function ShazanTVApp() {
             initializePlayer(selectedChannel);
         }
         return () => {
-            if (hlsRef.current) {
-                hlsRef.current.destroy();
-            }
+            if (hlsRef.current) hlsRef.current.destroy();
         };
     }, [selectedChannel, activeHost]);
 
     const handleManualPlay = () => {
+        if (isLocked) {
+            setShowUnlockPrompt(true);
+            setTimeout(() => setShowUnlockPrompt(false), 3000);
+            return;
+        }
         if (videoRef.current) {
             videoRef.current.play().then(() => {
                 setIsPlaying(true);
                 setShowPlayOverlay(false);
-                if (selectedChannel) setStatus('Streaming Now');
-            }).catch(err => {
-                console.error("Manual play failed", err);
-                setStatus("Play blocked by browser");
+                if (selectedChannel) setStatus('Streaming: ' + selectedChannel.name);
             });
         }
     };
 
-    // --- SPOOFING LOGIC ---
-    const applySpoofing = (originalUrl: string) => originalUrl;
+    const toggleFullScreen = () => {
+        if (!containerRef.current) return;
+        if (!document.fullscreenElement) {
+            containerRef.current.requestFullscreen().catch(err => {
+                console.error("Fullscreen failed", err);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    };
 
     const playChannel = (channel: Channel) => {
         setSelectedChannel(channel);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const filteredChannels = CHANNELS.filter(c => {
@@ -166,249 +187,238 @@ export default function ShazanTVApp() {
     });
 
     return (
-        <main className="flex flex-col min-h-screen max-w-md mx-auto relative overflow-hidden bg-[#0a0a0f]">
+        <main className="flex flex-col min-h-screen max-w-md mx-auto relative overflow-hidden bg-[#0a0a0f] text-white">
 
             {/* --- BACKGROUND DECOR --- */}
-            <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-blue-600/20 rounded-full blur-[80px]" />
-            <div className="absolute bottom-[-10%] left-[-10%] w-64 h-64 bg-purple-600/10 rounded-full blur-[80px]" />
+            <div className="fixed inset-0 pointer-events-none">
+                <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-blue-600/20 rounded-full blur-[80px]" />
+                <div className="absolute bottom-[-10%] left-[-10%] w-64 h-64 bg-purple-600/10 rounded-full blur-[80px]" />
+            </div>
 
-            {/* --- HEADER --- */}
-            <header className="p-6 flex items-center justify-between z-10">
-                <div>
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
-                        Shazan TV
-                    </h1>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Free Data Edition v2.5</p>
-                </div>
-                <div className="flex gap-3">
-                    <button className="p-2 glass rounded-xl text-gray-400 hover:text-white transition-colors">
-                        <Search size={20} />
-                    </button>
-                    <button className="p-2 glass rounded-xl text-blue-400">
-                        <Settings size={20} />
-                    </button>
-                </div>
-            </header>
-
-            {/* --- PLAYER SECTION --- */}
-            <section className="px-6 mb-8 z-10">
-                <div className="relative aspect-video glass rounded-3xl overflow-hidden group bg-black shadow-2xl">
-                    {selectedChannel ? (
-                        <div className="w-full h-full relative" onClick={handleManualPlay}>
-                            <video
-                                ref={videoRef}
-                                className="w-full h-full object-contain"
-                                playsInline
-                                poster={selectedChannel.logo}
-                            />
-
-                            {/* Overlay Controls */}
-                            <AnimatePresence>
-                                {showPlayOverlay && (
-                                    <motion.div
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        className="absolute inset-0 flex items-center justify-center bg-black/60 z-20 cursor-pointer"
-                                    >
-                                        <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-600/40">
-                                            <Play size={40} fill="white" className="ml-1 text-white" />
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-
-                            {!isPlaying && !showPlayOverlay && (
-                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                    <div className="flex flex-col items-center gap-4">
-                                        <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
-                                        <span className="text-[10px] font-bold text-blue-400 tracking-widest underline decoration-blue-500/50">CONNECTING...</span>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Header HUD */}
-                            <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
-                                <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
-                                    <div className="w-2 h-2 bg-red-500 rounded-full live-indicator" />
-                                    <span className="text-[10px] font-bold">LIVE</span>
-                                </div>
-                                <div className="text-[10px] font-mono text-cyan-400 bg-black/60 px-3 py-1 rounded-full border border-cyan-500/30">
-                                    SPOOF: ACTIVE ({activeHost.host})
-                                </div>
-                            </div>
-
-                            {/* Bottom Controls */}
-                            <div className={`absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent transition-opacity ${isLocked ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium">{selectedChannel.name}</span>
-                                    <div className="flex gap-4">
-                                        <button onClick={() => setIsLocked(true)} className="p-1 hover:text-blue-400">
-                                            <Unlock size={18} />
-                                        </button>
-                                        <Volume2 size={18} />
-                                        <Maximize size={18} />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Lock Overlay Content */}
-                            {isLocked && (
-                                <div className="absolute inset-0 bg-black/20 z-50 flex items-center justify-center">
-                                    <motion.button
-                                        initial={{ scale: 0.8, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        onClick={() => setIsLocked(false)}
-                                        className="w-16 h-16 glass rounded-full flex items-center justify-center text-white border-blue-500/50 border-2 shadow-lg shadow-blue-500/20"
-                                    >
-                                        <Lock size={28} className="text-blue-400" />
-                                    </motion.button>
-                                    <div className="absolute bottom-4 text-[10px] text-white/40 font-bold tracking-widest">
-                                        SCREEN LOCKED - TAP ICON TO UNLOCK
-                                    </div>
-                                </div>
-                            )}
+            <div className="flex-1 overflow-y-auto no-scrollbar relative z-10 pb-24">
+                {/* --- HEADER --- */}
+                <header className="p-6 flex items-center justify-between">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <Activity size={18} className="text-blue-400" />
+                            <h1 className="text-2xl font-black bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                                SHAZAN TV
+                            </h1>
                         </div>
-                    ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-blue-500/5">
-                            <Tv size={48} className="text-blue-500/20 mb-4" />
-                            <p className="text-gray-400 text-sm font-light leading-relaxed">
-                                Select a channel to start streaming <br /> without data charges.
-                            </p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Status Bar */}
-                <div className="mt-4 flex items-center justify-between px-2">
-                    <div className="flex items-center gap-2">
-                        <div className={`p-1 rounded-full ${isSpoofingActive ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
-                            {isSpoofingActive ? <Wifi size={12} /> : <WifiOff size={12} />}
-                        </div>
-                        <span className="text-[11px] text-gray-500 font-medium uppercase tracking-tight">{status}</span>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1 font-bold">Premium Zero-Data Player</p>
                     </div>
-                    <button
-                        onClick={() => setIsSpoofingActive(!isSpoofingActive)}
-                        className={`text-[10px] px-3 py-1 rounded-full border transition-all ${isSpoofingActive
-                            ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
-                            : 'bg-red-500/10 border-red-500/30 text-red-400'
-                            }`}
-                    >
-                        {isSpoofingActive ? 'TUNNELING ON' : 'TUNNELING OFF'}
-                    </button>
-                </div>
-            </section>
-
-            {/* --- HOST SELECTOR (Horizontal Scroll) --- */}
-            <section className="mb-8 z-10">
-                <div className="px-6 mb-4 flex items-center gap-2">
-                    <Zap size={16} className="text-yellow-400" />
-                    <h2 className="text-sm font-semibold text-gray-300">Fast Data Hosts</h2>
-                </div>
-                <div className="flex overflow-x-auto gap-4 px-6 no-scrollbar pb-2">
-                    {FREE_HOSTS.map((host) => (
-                        <button
-                            key={host.id}
-                            onClick={() => setActiveHost(host)}
-                            className={`flex-shrink-0 flex items-center gap-3 px-4 py-3 rounded-2xl transition-all ${activeHost.id === host.id
-                                ? 'bg-blue-600/20 border-blue-500/50 border shadow-[0_0_15px_rgba(59,130,246,0.2)]'
-                                : 'glass-card'
-                                }`}
-                        >
-                            <span className="text-lg">{host.icon}</span>
-                            <div className="text-left">
-                                <p className="text-xs font-bold text-white leading-none mb-1">{host.name}</p>
-                                <p className="text-[10px] text-gray-500 font-mono">{host.host}</p>
-                            </div>
+                    <div className="flex gap-2">
+                        <button className="p-2 glass rounded-xl text-gray-400">
+                            <Settings size={20} />
                         </button>
-                    ))}
-                </div>
-            </section>
+                    </div>
+                </header>
 
-            {/* --- CHANNEL CATEGORIES --- */}
-            <section className="mb-6 z-10">
-                <div className="flex overflow-x-auto gap-3 px-6 no-scrollbar">
-                    {CATEGORIES.map((cat) => (
-                        <button
-                            key={cat}
-                            onClick={() => setActiveCategory(cat)}
-                            className={`px-4 py-2 rounded-full text-[11px] font-bold transition-all whitespace-nowrap ${activeCategory === cat
-                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                                : 'glass text-gray-400 hover:text-white'
-                                }`}
-                        >
-                            {cat.toUpperCase()}
-                        </button>
-                    ))}
-                </div>
-            </section>
+                {/* --- PLAYER SECTION --- */}
+                <section className="px-6 mb-8" ref={containerRef}>
+                    <div className="relative aspect-video glass rounded-3xl overflow-hidden bg-black shadow-2xl border border-white/5 group">
+                        {selectedChannel ? (
+                            <div className="w-full h-full relative" onClick={handleManualPlay}>
+                                <video
+                                    ref={videoRef}
+                                    className="w-full h-full object-contain"
+                                    playsInline
+                                    poster={selectedChannel.logo}
+                                />
 
-            {/* --- CHANNEL LIST --- */}
-            <section className="px-6 flex-1 z-10">
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-sm font-semibold text-gray-300">{activeCategory} Channels</h2>
-                    <span className="text-[10px] text-gray-500 px-2 py-0.5 glass rounded-md">
-                        {filteredChannels.length} ONLINE
-                    </span>
-                </div>
+                                {/* Lock Prompt Overlay */}
+                                <AnimatePresence>
+                                    {isLocked && showUnlockPrompt && (
+                                        <motion.div
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-md"
+                                        >
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setIsLocked(false); }}
+                                                className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/50"
+                                            >
+                                                <Lock size={28} />
+                                            </button>
+                                            <p className="mt-4 text-[10px] font-bold tracking-[0.2em]">TAP TO UNLOCK</p>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
 
-                <div className="grid grid-cols-2 gap-4 pb-10">
-                    {filteredChannels.map((channel) => (
-                        <motion.button
-                            whileTap={{ scale: 0.96 }}
-                            key={channel.id}
-                            onClick={() => playChannel(channel)}
-                            className={`p-4 rounded-3xl flex flex-col items-center gap-3 transition-all ${selectedChannel?.id === channel.id
-                                ? 'active-glow bg-blue-600/10'
-                                : 'glass-card'
-                                }`}
-                        >
-                            <div className="w-12 h-12 glass rounded-2xl flex items-center justify-center text-2xl shadow-inner">
-                                {channel.logo}
+                                {/* Play Overlay */}
+                                <AnimatePresence>
+                                    {!isLocked && showPlayOverlay && (
+                                        <motion.div
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            className="absolute inset-0 flex items-center justify-center bg-black/40 z-20 cursor-pointer"
+                                        >
+                                            <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/50">
+                                                <Play size={32} fill="white" className="ml-1" />
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
+                                {!isPlaying && !showPlayOverlay && (
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                        <div className="flex flex-col items-center gap-4">
+                                            <div className="w-8 h-8 border-3 border-blue-500/20 border-t-blue-400 rounded-full animate-spin" />
+                                            <span className="text-[9px] font-bold text-blue-400 tracking-widest uppercase">Connecting...</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* HUD Displays */}
+                                <div className={`absolute top-4 left-4 right-4 flex justify-between items-center transition-opacity ${isLocked ? 'opacity-0' : 'opacity-100'}`}>
+                                    <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
+                                        <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                                        <span className="text-[8px] font-black">LIVE</span>
+                                    </div>
+                                    <div className="text-[8px] font-mono text-blue-400 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-blue-500/20">
+                                        {activeHost.host}
+                                    </div>
+                                </div>
+
+                                {/* Controls Overlay */}
+                                <div className={`absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/90 to-transparent transition-opacity ${isLocked ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'}`}>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-bold text-white/90">{selectedChannel.name}</span>
+                                            <span className="text-[8px] text-blue-400 font-bold tracking-widest uppercase">{selectedChannel.category}</span>
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <button onClick={(e) => { e.stopPropagation(); setIsLocked(true); }} className="p-1 hover:text-blue-400"><Unlock size={18} /></button>
+                                            <button onClick={(e) => { e.stopPropagation(); toggleFullScreen(); }} className="p-1 hover:text-blue-400"><Maximize size={18} /></button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="text-center">
-                                <p className="text-sm font-bold text-gray-200">{channel.name}</p>
-                                <p className="text-[10px] text-gray-500 mt-0.5">{channel.category}</p>
+                        ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center bg-[#1a1a25]/50">
+                                <Tv size={48} className="text-blue-500/20 mb-4" />
+                                <p className="text-gray-400 text-sm font-medium">Select a channel to begin</p>
                             </div>
-                        </motion.button>
-                    ))}
-                </div>
-            </section>
+                        )}
+                    </div>
 
-            {/* --- NAVIGATION BAR (Floating) --- */}
-            <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[340px] glass h-16 rounded-2xl flex items-center justify-around px-4 z-50 border border-white/10">
-                <button className="flex flex-col items-center gap-1 text-blue-400">
-                    <Tv size={22} />
-                    <span className="text-[9px] font-bold">TV</span>
+                    {/* Status Bar */}
+                    <div className="mt-4 flex items-center justify-between px-2">
+                        <div className="flex items-center gap-2">
+                            <div className={`p-1 rounded-full ${isSpoofingActive ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
+                                {isSpoofingActive ? <Wifi size={12} /> : <WifiOff size={12} />}
+                            </div>
+                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tight">{status}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[9px] font-bold text-gray-500">
+                            <Layers size={12} />
+                            <span>{CHANNELS.length} CHANNELS ONLINE</span>
+                        </div>
+                    </div>
+                </section>
+
+                {/* --- HOST SELECTOR --- */}
+                <section className="mb-8 overflow-hidden">
+                    <div className="px-6 mb-4 flex items-center gap-2">
+                        <Zap size={16} className="text-yellow-400" />
+                        <h2 className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Fast Bypass Nodes</h2>
+                    </div>
+                    <div className="flex overflow-x-auto gap-3 px-6 no-scrollbar pb-2">
+                        {FREE_HOSTS.map((host) => (
+                            <button
+                                key={host.id}
+                                onClick={() => setActiveHost(host)}
+                                className={`flex-shrink-0 flex items-center gap-3 px-4 py-3 rounded-2xl transition-all ${activeHost.id === host.id
+                                        ? 'bg-blue-600/20 border-blue-500 border shadow-[0_0_15px_rgba(59,130,246,0.3)]'
+                                        : 'bg-white/5 border border-white/5'
+                                    }`}
+                            >
+                                <span className="text-xl">{host.icon}</span>
+                                <div className="text-left">
+                                    <p className="text-[10px] font-black text-white leading-none mb-1">{host.name}</p>
+                                    <p className="text-[8px] text-gray-500 font-mono tracking-tighter">{host.host}</p>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </section>
+
+                {/* --- SEARCH & CATEGORIES --- */}
+                <section className="px-6 mb-6">
+                    <div className="relative mb-6">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
+                        <input
+                            type="text"
+                            placeholder="Find channels..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-gray-600"
+                        />
+                    </div>
+
+                    <div className="flex overflow-x-auto gap-2 no-scrollbar mb-2">
+                        {CATEGORIES.map((cat) => (
+                            <button
+                                key={cat}
+                                onClick={() => setActiveCategory(cat)}
+                                className={`flex-shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeCategory === cat
+                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                                        : 'bg-white/5 text-gray-500 border border-white/5'
+                                    }`}
+                            >
+                                {cat}
+                            </button>
+                        ))}
+                    </div>
+                </section>
+
+                {/* --- CHANNELS LIST --- */}
+                <section className="px-6">
+                    <div className="grid grid-cols-2 gap-4">
+                        {filteredChannels.map((channel) => (
+                            <motion.button
+                                whileTap={{ scale: 0.95 }}
+                                key={channel.id}
+                                onClick={() => playChannel(channel)}
+                                className={`relative flex flex-col items-center justify-center p-6 rounded-3xl transition-all group ${selectedChannel?.id === channel.id
+                                        ? 'bg-blue-600/10 border-blue-500 border-2 shadow-[0_0_20px_rgba(59,130,246,0.1)]'
+                                        : 'bg-white/5 border border-white/5 hover:bg-white/10'
+                                    }`}
+                            >
+                                <div className="text-4xl mb-3 transition-transform group-hover:scale-110 duration-300">{channel.logo}</div>
+                                <span className="text-[11px] font-black text-center text-white leading-snug tracking-tight mb-1">{channel.name}</span>
+                                <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">{channel.category}</span>
+                            </motion.button>
+                        ))}
+                    </div>
+                </section>
+
+            </div>
+
+            {/* --- BOTTOM NAVIGATION --- */}
+            <nav className="fixed bottom-6 left-6 right-6 glass rounded-[32px] p-2 flex items-center justify-between z-50 border border-white/10 shadow-2xl backdrop-blur-2xl">
+                <button className="flex-1 flex flex-col items-center gap-1 text-blue-400">
+                    <Tv size={20} />
+                    <span className="text-[8px] font-black uppercase tracking-widest">Live TV</span>
                 </button>
-                <button className="flex flex-col items-center gap-1 text-gray-500 hover:text-white transition-colors">
-                    <Search size={22} />
-                    <span className="text-[9px] font-medium">BROWSE</span>
+                <button className="flex-1 flex flex-col items-center gap-1 text-gray-500 hover:text-gray-300">
+                    <Smartphone size={20} />
+                    <span className="text-[8px] font-black uppercase tracking-widest">Mobile</span>
                 </button>
-                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center -translate-y-6 shadow-lg shadow-blue-600/40 border-4 border-[#0a0a0f]">
-                    <Play size={20} fill="white" className="ml-1" />
+                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-600/40 -mt-8 border-4 border-[#0a0a0f]">
+                    <Play size={20} fill="white" className="ml-1 text-white" />
                 </div>
-                <button className="flex flex-col items-center gap-1 text-gray-500 hover:text-white transition-colors">
-                    <Zap size={22} />
-                    <span className="text-[9px] font-medium">BOOST</span>
+                <button className="flex-1 flex flex-col items-center gap-1 text-gray-500 hover:text-gray-300">
+                    <Zap size={20} />
+                    <span className="text-[8px] font-black uppercase tracking-widest">Boost</span>
                 </button>
-                <button className="flex flex-col items-center gap-1 text-gray-500 hover:text-white transition-colors">
-                    <Info size={22} />
-                    <span className="text-[9px] font-medium">ABOUT</span>
+                <button className="flex-1 flex flex-col items-center gap-1 text-gray-500 hover:text-gray-300">
+                    <Globe size={20} />
+                    <span className="text-[8px] font-black uppercase tracking-widest">Global</span>
                 </button>
             </nav>
-
-            {/* Tailwind no-scrollbar Utility */}
-            <style jsx global>{`
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
-
         </main>
     );
 }
