@@ -117,6 +117,8 @@ export default function ShazanTVApp() {
     const [loadingPlaylist, setLoadingPlaylist] = useState<string | null>(null);
     const [loadedPlaylists, setLoadedPlaylists] = useState<Set<string>>(new Set());
     const [showPlaylistPanel, setShowPlaylistPanel] = useState(false);
+    const [customM3uUrl, setCustomM3uUrl] = useState('');
+    const [customM3uLoading, setCustomM3uLoading] = useState(false);
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -148,6 +150,31 @@ export default function ShazanTVApp() {
             setLoadingPlaylist(null);
         }
     }, [loadedPlaylists]);
+
+    // --- LOAD CUSTOM M3U URL ---
+    const loadCustomM3U = async () => {
+        if (!customM3uUrl.trim()) return;
+        setCustomM3uLoading(true);
+        setStatus('Loading custom playlist...');
+        try {
+            const res = await fetch(customM3uUrl.trim());
+            if (!res.ok) throw new Error('Failed to fetch');
+            const text = await res.text();
+            const parsed = parseM3U(text, 'Custom');
+            if (parsed.length === 0) throw new Error('No channels found');
+            setAllChannels(prev => {
+                const existingUrls = new Set(prev.map((c: Channel) => c.url));
+                const unique = parsed.filter((c: Channel) => !existingUrls.has(c.url));
+                return [...prev, ...unique];
+            });
+            setStatus(`✅ Added ${parsed.length} channels from custom M3U`);
+            setCustomM3uUrl('');
+        } catch (err) {
+            setStatus('⚠️ Failed to load M3U — check URL or CORS');
+        } finally {
+            setCustomM3uLoading(false);
+        }
+    };
 
     // --- PLAYER LOGIC ---
     const initializePlayer = useCallback((channel: Channel) => {
@@ -277,6 +304,35 @@ export default function ShazanTVApp() {
                                             {pl.name}
                                         </button>
                                     ))}
+                                </div>
+
+                                {/* CUSTOM M3U URL INPUT */}
+                                <div className="mt-5 pt-4 border-t border-white/10">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                        <RefreshCw size={11} className="text-purple-400" />
+                                        Custom M3U Playlist URL
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="url"
+                                            placeholder="https://example.com/channels.m3u"
+                                            value={customM3uUrl}
+                                            onChange={e => setCustomM3uUrl(e.target.value)}
+                                            onKeyDown={e => e.key === 'Enter' && loadCustomM3U()}
+                                            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[10px] text-white placeholder:text-gray-600 focus:outline-none focus:border-purple-500/50 transition-all min-w-0"
+                                        />
+                                        <button
+                                            onClick={loadCustomM3U}
+                                            disabled={customM3uLoading || !customM3uUrl.trim()}
+                                            className={`flex-shrink-0 px-3 py-2 rounded-xl text-[10px] font-black border transition-all ${customM3uLoading
+                                                    ? 'bg-purple-600/10 border-purple-500/30 text-purple-400 animate-pulse'
+                                                    : 'bg-purple-600/20 border-purple-500/30 text-purple-300 hover:bg-purple-600/30'
+                                                }`}
+                                        >
+                                            {customM3uLoading ? <RefreshCw size={12} className="animate-spin" /> : 'LOAD'}
+                                        </button>
+                                    </div>
+                                    <p className="text-[8px] text-gray-600 mt-1.5">Paste any M3U / M3U8 playlist link and all channels will be added automatically.</p>
                                 </div>
                             </div>
                         </motion.section>
