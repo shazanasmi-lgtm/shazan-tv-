@@ -325,8 +325,8 @@ export default function ShazanTVApp() {
                                             onClick={loadCustomM3U}
                                             disabled={customM3uLoading || !customM3uUrl.trim()}
                                             className={`flex-shrink-0 px-3 py-2 rounded-xl text-[10px] font-black border transition-all ${customM3uLoading
-                                                    ? 'bg-purple-600/10 border-purple-500/30 text-purple-400 animate-pulse'
-                                                    : 'bg-purple-600/20 border-purple-500/30 text-purple-300 hover:bg-purple-600/30'
+                                                ? 'bg-purple-600/10 border-purple-500/30 text-purple-400 animate-pulse'
+                                                : 'bg-purple-600/20 border-purple-500/30 text-purple-300 hover:bg-purple-600/30'
                                                 }`}
                                         >
                                             {customM3uLoading ? <RefreshCw size={12} className="animate-spin" /> : 'LOAD'}
@@ -444,8 +444,23 @@ export default function ShazanTVApp() {
                         </div>
                     </section>
                 )}
+                {/* DIALOG ZERO DATA HELPER BANNER */}
+                <section className="px-4 mb-4">
+                    <div className="flex items-center justify-between bg-gradient-to-r from-blue-900/30 to-purple-900/20 border border-blue-500/20 rounded-2xl px-4 py-3">
+                        <div>
+                            <p className="text-[10px] font-black text-blue-300 uppercase tracking-widest">Dialog Zero Data</p>
+                            <p className="text-[8px] text-gray-400 mt-0.5">HTTP Injector config — watch free via Dialog</p>
+                        </div>
+                        <a
+                            href="/dialog-zero.hie"
+                            download="SHazanTV-Dialog-Zero.hie"
+                            className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 rounded-xl text-[9px] font-black text-white shadow-lg shadow-blue-600/30 hover:bg-blue-500 transition-colors"
+                        >
+                            ⬇️ Download Config
+                        </a>
+                    </div>
+                </section>
 
-                {/* SEARCH */}
                 <section className="px-4 mb-3">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={14} />
