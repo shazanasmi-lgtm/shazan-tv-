@@ -37,35 +37,17 @@ const FREE_HOSTS = [
 
 const CHANNELS: Channel[] = [
     // --- SPORTS ---
-    { id: 's1', name: 'DTV Sports 1', logo: '⚽', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
-    { id: 's2', name: 'Cricket Live', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
+    { id: 's1', name: 'Sports TV 1', logo: '⚽', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
+    { id: 's2', name: 'Cricket Live', logo: '🏏', url: 'https://playertest.longtailvideo.com/adaptive/wowzaid3/playlist.m3u8', category: 'Sports' },
     { id: 's3', name: 'Star Sports 1', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
-    { id: 's4', name: 'Sony Ten 2', logo: '🎾', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
-    { id: 's5', name: 'Eurosport', logo: '🚴', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Sports' },
 
-    // --- MOVIES & ENTERTAINMENT ---
+    // --- MOVIES ---
     { id: 'm1', name: 'HBO Movies', logo: '🎬', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Movies' },
     { id: 'm2', name: 'Action Zone', logo: '🔥', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Movies' },
-    { id: 'm3', name: 'Cinema Hall', logo: '🍿', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Movies' },
-    { id: 'e1', name: 'Sony TV', logo: '🎭', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Entertainment' },
-    { id: 'e2', name: 'Star Plus', logo: '🌟', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Entertainment' },
 
-    // --- DOCUMENTARY ---
-    { id: 'd1', name: 'Discovery', logo: '🌍', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Documentary' },
-    { id: 'd2', name: 'Nat Geo', logo: '🐆', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Documentary' },
-    { id: 'd3', name: 'Animal Planet', logo: '🐘', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Documentary' },
-
-    // --- INTERNATIONAL NEWS ---
-    { id: 'n1', name: 'BBC News', logo: '🌐', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'News' },
-    { id: 'n2', name: 'Al Jazeera', logo: '🌍', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'News' },
-    { id: 'n3', name: 'CNN', logo: '📢', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'News' },
-
-    // --- SRI LANKAN CHANNELS ---
-    { id: 'sl1', name: 'ITN', logo: '📺', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'SL TV' },
-    { id: 'sl2', name: 'Rupavahini', logo: '📺', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'SL TV' },
-    { id: 'sl3', name: 'Sirasa TV', logo: '📺', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'SL TV' },
-    { id: 'sl4', name: 'Derana', logo: '📺', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'SL TV' },
-    { id: 'sl5', name: 'Hiru TV', logo: '📺', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'SL TV' },
+    // --- SL TV ---
+    { id: 'sl1', name: 'ITN Sri Lanka', logo: '📺', url: 'https://itn.m3u8.stream/live.m3u8', category: 'SL TV' },
+    { id: 'sl2', name: 'Hiru TV', logo: '📺', url: 'https://hiru.m3u8.stream/live.m3u8', category: 'SL TV' },
 ];
 
 export default function ShazanTVApp() {
@@ -76,67 +58,87 @@ export default function ShazanTVApp() {
     const [status, setStatus] = useState('Ready (Viu Zero-Data Mode)');
     const [searchQuery, setSearchQuery] = useState('');
     const [isLocked, setIsLocked] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [showPlayOverlay, setShowPlayOverlay] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
     const hlsRef = useRef<Hls | null>(null);
 
     const CATEGORIES = ['All', 'Sports', 'Movies', 'News', 'Documentary', 'Entertainment', 'SL TV'];
 
     // --- VIDEO PLAYBACK LOGIC ---
-    useEffect(() => {
-        if (!selectedChannel || !videoRef.current) return;
+    const initializePlayer = (channel: Channel) => {
+        if (!videoRef.current) return;
 
         const video = videoRef.current;
-        const source = selectedChannel.url;
+        const source = channel.url;
+
+        setStatus('Connecting via ' + activeHost.host);
+        setShowPlayOverlay(false);
+        setIsPlaying(false);
+
+        if (hlsRef.current) {
+            hlsRef.current.destroy();
+        }
 
         if (Hls.isSupported()) {
-            if (hlsRef.current) {
-                hlsRef.current.destroy();
-            }
-
             const hls = new Hls({
-                // In a real environment with a proxy, we'd add custom headers here
-                // xhrSetup: (xhr) => {
-                //   if (isSpoofingActive) {
-                //     xhr.setRequestHeader('X-Online-Host', activeHost.host);
-                //   }
-                // }
+                enableWorker: true,
+                lowLatencyMode: true,
             });
 
             hls.loadSource(source);
             hls.attachMedia(video);
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                video.play().catch(e => console.log("Auto-play blocked"));
+                video.play().then(() => {
+                    setIsPlaying(true);
+                    setStatus('Streaming: ' + channel.name);
+                }).catch(() => {
+                    setShowPlayOverlay(true);
+                    setStatus('Tap to Play');
+                });
             });
+
+            hls.on(Hls.Events.ERROR, (event, data) => {
+                if (data.fatal) {
+                    setStatus('Stream Error: Retrying...');
+                    hls.recoverMediaError();
+                }
+            });
+
             hlsRef.current = hls;
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
             video.src = source;
             video.addEventListener('loadedmetadata', () => {
-                video.play();
+                video.play().then(() => setIsPlaying(true)).catch(() => setShowPlayOverlay(true));
             });
         }
+    };
 
+    useEffect(() => {
+        if (selectedChannel) {
+            initializePlayer(selectedChannel);
+        }
         return () => {
             if (hlsRef.current) {
                 hlsRef.current.destroy();
             }
         };
-    }, [selectedChannel]);
+    }, [selectedChannel, activeHost]); // Added activeHost to dependencies to re-initialize player if host changes
+
+    const handleManualPlay = () => {
+        if (videoRef.current) {
+            videoRef.current.play();
+            setIsPlaying(true);
+            setShowPlayOverlay(false);
+            if (selectedChannel) setStatus('Streaming: ' + selectedChannel.name);
+        }
+    };
 
     // --- SPOOFING LOGIC ---
-    const applySpoofing = (originalUrl: string) => {
-        if (!isSpoofingActive) return originalUrl;
-        // For web browsers, we show the spoofed domain visually
-        // Real spoofing happens via XHR headers or a Proxy server
-        return originalUrl;
-    };
+    const applySpoofing = (originalUrl: string) => originalUrl;
 
     const playChannel = (channel: Channel) => {
         setSelectedChannel(channel);
-        setStatus('Connecting via ' + activeHost.name);
-
-        setTimeout(() => {
-            setStatus('Streaming: ' + channel.name);
-        }, 1500);
     };
 
     const filteredChannels = CHANNELS.filter(c => {
@@ -158,7 +160,7 @@ export default function ShazanTVApp() {
                     <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
                         Shazan TV
                     </h1>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Free Data Edition v2.0</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">Free Data Edition v2.5</p>
                 </div>
                 <div className="flex gap-3">
                     <button className="p-2 glass rounded-xl text-gray-400 hover:text-white transition-colors">
@@ -172,22 +174,40 @@ export default function ShazanTVApp() {
 
             {/* --- PLAYER SECTION --- */}
             <section className="px-6 mb-8 z-10">
-                <div className="relative aspect-video glass rounded-3xl overflow-hidden group bg-black">
+                <div className="relative aspect-video glass rounded-3xl overflow-hidden group bg-black shadow-2xl">
                     {selectedChannel ? (
-                        <div className="w-full h-full relative">
+                        <div className="w-full h-full relative" onClick={handleManualPlay}>
                             <video
                                 ref={videoRef}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-contain"
                                 playsInline
-                                controls={false}
+                                poster={selectedChannel.logo}
                             />
 
                             {/* Overlay Controls */}
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                {!status.includes('Streaming') && (
-                                    <Play size={48} className="text-white/30 animate-pulse" />
+                            <AnimatePresence>
+                                {showPlayOverlay && (
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="absolute inset-0 flex items-center justify-center bg-black/60 z-20 cursor-pointer"
+                                    >
+                                        <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-600/40">
+                                            <Play size={40} fill="white" className="ml-1 text-white" />
+                                        </div>
+                                    </motion.div>
                                 )}
-                            </div>
+                            </AnimatePresence>
+
+                            {!isPlaying && !showPlayOverlay && (
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    <div className="flex flex-col items-center gap-4">
+                                        <div className="w-10 h-10 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+                                        <span className="text-[10px] font-bold text-blue-400 tracking-widest underline decoration-blue-500/50">CONNECTING...</span>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Header HUD */}
                             <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
