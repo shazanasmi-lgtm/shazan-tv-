@@ -100,6 +100,21 @@ export default function ShazanTVApp() {
         setShowPlayOverlay(false);
         setIsPlaying(false);
 
+        // Media Session Setup for Background Play
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: channel.name,
+                artist: 'Shazan TV - Premium Streaming',
+                album: channel.category,
+                artwork: [
+                    { src: 'https://cdn-icons-png.flaticon.com/512/716/716429.png', sizes: '512x512', type: 'image/png' }
+                ]
+            });
+
+            navigator.mediaSession.setActionHandler('play', () => video.play());
+            navigator.mediaSession.setActionHandler('pause', () => video.pause());
+        }
+
         if (hlsRef.current) {
             hlsRef.current.destroy();
         }
@@ -218,7 +233,7 @@ export default function ShazanTVApp() {
                 <section className="px-6 mb-8" ref={containerRef}>
                     <div className="relative aspect-video glass rounded-3xl overflow-hidden bg-black shadow-2xl border border-white/5 group">
                         {selectedChannel ? (
-                            <div className="w-full h-full relative" onClick={handleManualPlay}>
+                            <div className="w-full h-full relative" onClick={() => handleManualPlay()}>
                                 <video
                                     ref={videoRef}
                                     className="w-full h-full object-contain"
@@ -290,8 +305,21 @@ export default function ShazanTVApp() {
                                             <span className="text-[8px] text-blue-400 font-bold tracking-widest uppercase">{selectedChannel.category}</span>
                                         </div>
                                         <div className="flex gap-3">
-                                            <button onClick={(e) => { e.stopPropagation(); setIsLocked(true); }} className="p-1 hover:text-blue-400"><Unlock size={18} /></button>
-                                            <button onClick={(e) => { e.stopPropagation(); toggleFullScreen(); }} className="p-1 hover:text-blue-400"><Maximize size={18} /></button>
+                                            <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); setIsLocked(true); }} className="p-1 hover:text-blue-400">
+                                                <Unlock size={18} />
+                                            </button>
+                                            <button
+                                                onClick={(e: React.MouseEvent) => {
+                                                    e.stopPropagation();
+                                                    if (videoRef.current) videoRef.current.requestPictureInPicture();
+                                                }}
+                                                className="p-1 hover:text-blue-400"
+                                            >
+                                                <Layers size={18} />
+                                            </button>
+                                            <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); toggleFullScreen(); }} className="p-1 hover:text-blue-400">
+                                                <Maximize size={18} />
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -331,8 +359,8 @@ export default function ShazanTVApp() {
                                 key={host.id}
                                 onClick={() => setActiveHost(host)}
                                 className={`flex-shrink-0 flex items-center gap-3 px-4 py-3 rounded-2xl transition-all ${activeHost.id === host.id
-                                        ? 'bg-blue-600/20 border-blue-500 border shadow-[0_0_15px_rgba(59,130,246,0.3)]'
-                                        : 'bg-white/5 border border-white/5'
+                                    ? 'bg-blue-600/20 border-blue-500 border shadow-[0_0_15px_rgba(59,130,246,0.3)]'
+                                    : 'bg-white/5 border border-white/5'
                                     }`}
                             >
                                 <span className="text-xl">{host.icon}</span>
@@ -364,8 +392,8 @@ export default function ShazanTVApp() {
                                 key={cat}
                                 onClick={() => setActiveCategory(cat)}
                                 className={`flex-shrink-0 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeCategory === cat
-                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                                        : 'bg-white/5 text-gray-500 border border-white/5'
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                                    : 'bg-white/5 text-gray-500 border border-white/5'
                                     }`}
                             >
                                 {cat}
@@ -383,8 +411,8 @@ export default function ShazanTVApp() {
                                 key={channel.id}
                                 onClick={() => playChannel(channel)}
                                 className={`relative flex flex-col items-center justify-center p-6 rounded-3xl transition-all group ${selectedChannel?.id === channel.id
-                                        ? 'bg-blue-600/10 border-blue-500 border-2 shadow-[0_0_20px_rgba(59,130,246,0.1)]'
-                                        : 'bg-white/5 border border-white/5 hover:bg-white/10'
+                                    ? 'bg-blue-600/10 border-blue-500 border-2 shadow-[0_0_20px_rgba(59,130,246,0.1)]'
+                                    : 'bg-white/5 border border-white/5 hover:bg-white/10'
                                     }`}
                             >
                                 <div className="text-4xl mb-3 transition-transform group-hover:scale-110 duration-300">{channel.logo}</div>
