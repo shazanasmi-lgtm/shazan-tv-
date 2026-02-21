@@ -38,6 +38,7 @@ const BUILTIN_CHANNELS: Channel[] = [
     { id: 'euronews', name: 'Euronews', logo: '🇪🇺', url: 'https://euronews-prod-samsung-dplus-en.akamaized.net/hls/live/2040842/eeuronewslive/index.m3u8', category: 'News', country: 'Europe', language: 'English' },
     { id: 'f24ar', name: 'France 24 Arabic', logo: '🌙', url: 'https://live-hls-web-aje.getaj.net/AJE/01.m3u8', category: 'News', country: 'France', language: 'Arabic' },
     { id: 'test1', name: 'HD Test Stream', logo: '📽️', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Entertainment', country: 'Global', language: 'English' },
+    { id: 'citytv', name: 'Citytv Canada', logo: '🏙️', url: 'https://citytv.com/live', category: 'Entertainment', country: 'Canada', language: 'English' },
     // SL Channels
     { id: 'itn', name: 'ITN Sri Lanka', logo: '📺', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'rupa', name: 'Rupavahini', logo: '🏛️', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
@@ -266,10 +267,10 @@ export default function ShazanTVApp() {
                                             onClick={() => loadPlaylist(pl)}
                                             disabled={loadedPlaylists.has(pl.id) || loadingPlaylist === pl.id}
                                             className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-left transition-all border text-[10px] font-bold ${loadedPlaylists.has(pl.id)
-                                                    ? 'bg-green-600/10 border-green-500/30 text-green-400'
-                                                    : loadingPlaylist === pl.id
-                                                        ? 'bg-blue-600/10 border-blue-500/30 text-blue-400 animate-pulse'
-                                                        : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
+                                                ? 'bg-green-600/10 border-green-500/30 text-green-400'
+                                                : loadingPlaylist === pl.id
+                                                    ? 'bg-blue-600/10 border-blue-500/30 text-blue-400 animate-pulse'
+                                                    : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10'
                                                 }`}
                                         >
                                             {loadingPlaylist === pl.id ? <RefreshCw size={12} className="animate-spin" /> : loadedPlaylists.has(pl.id) ? '✅' : <List size={12} />}
@@ -377,8 +378,8 @@ export default function ShazanTVApp() {
                             {FREE_HOSTS.filter(h => h.id !== 'direct').map(host => (
                                 <button key={host.id} onClick={() => setActiveHost(host)}
                                     className={`flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-[9px] font-black border transition-all ${activeHost.id === host.id
-                                            ? 'bg-blue-600/20 border-blue-500 text-blue-300'
-                                            : 'bg-white/5 border-white/5 text-gray-400'
+                                        ? 'bg-blue-600/20 border-blue-500 text-blue-300'
+                                        : 'bg-white/5 border-white/5 text-gray-400'
                                         }`}
                                 >
                                     <span>{host.icon}</span> {host.name}
@@ -408,8 +409,8 @@ export default function ShazanTVApp() {
                         {CATEGORIES.map(cat => (
                             <button key={cat} onClick={() => setActiveCategory(cat)}
                                 className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeCategory === cat
-                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                                        : 'bg-white/5 text-gray-500 border border-white/5'
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                                    : 'bg-white/5 text-gray-500 border border-white/5'
                                     }`}
                             >
                                 {cat}
@@ -432,8 +433,8 @@ export default function ShazanTVApp() {
                                 key={channel.id}
                                 onClick={() => { setSelectedChannel(channel); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                                 className={`relative flex flex-col items-start p-3 rounded-2xl text-left transition-all group border ${selectedChannel?.id === channel.id
-                                        ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.1)]'
-                                        : 'bg-white/5 border-white/5 hover:bg-white/10'
+                                    ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.1)]'
+                                    : 'bg-white/5 border-white/5 hover:bg-white/10'
                                     }`}
                             >
                                 {/* Logo area */}
