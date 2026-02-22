@@ -22,6 +22,9 @@ export async function GET(request: NextRequest) {
                 'Origin': targetUrl.origin,
                 'Sec-Fetch-Mode': 'cors',
                 'Sec-Fetch-Site': 'cross-site',
+                // Forward spoofing headers if present
+                ...(request.headers.get('x-online-host') ? { 'X-Online-Host': request.headers.get('x-online-host') || '' } : {}),
+                ...(request.headers.get('x-forwarded-host') ? { 'X-Forwarded-Host': request.headers.get('x-forwarded-host') || '' } : {}),
             },
             next: { revalidate: 0 } // Disable cache for live streams
         });

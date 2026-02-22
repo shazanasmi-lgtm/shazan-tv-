@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
     Tv, Search, Radio, Wifi, WifiOff, Maximize, Play, Pause, Lock, Unlock,
     ChevronRight, ChevronLeft, Volume2, VolumeX, Settings, Send, Info, Zap, RefreshCw, Layers, Server,
@@ -23,7 +23,7 @@ interface Channel {
 // --- FREE HOSTS ---
 const FREE_HOSTS = [
     { id: 'direct', name: 'Direct (Normal Data)', host: 'direct', icon: '🌐' },
-    { id: 'viu', name: 'Dialog Viu (Zero)', host: 'viu.lk', icon: '📺' },
+    { id: 'viu', name: 'Dialog SL', host: 'viu.lk', icon: '🇱🇰' },
     { id: 'dtv', name: 'DTV Proxy', host: 'dtv.dialog.lk', icon: '⚡' },
     { id: 'pivp', name: 'Pivp Proxy', host: 'p.pivp.lk', icon: '🚀' },
     { id: 'whatsapp', name: 'WhatsApp Pack', host: 'v.whatsapp.net', icon: '🟢' },
@@ -35,22 +35,22 @@ const BUILTIN_CHANNELS: Channel[] = [
     { id: 'aj', name: 'Al Jazeera English', logo: '📡', url: 'https://live-hls-web-aje.getaj.net/AJE/01.m3u8', category: 'News', country: 'Qatar', language: 'English' },
     { id: 'nhk', name: 'NHK World Japan', logo: '🏯', url: 'https://nhkwlive-ojp.akamaized.net/hls/live/2003459/nhkwlive-ojp-en/index_1M.m3u8', category: 'News', country: 'Japan', language: 'English' },
     { id: 'dw', name: 'DW English', logo: '🌍', url: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8', category: 'News', country: 'Germany', language: 'English' },
-    { id: 'france24', name: 'France 24 English', logo: '🗼', url: 'https://www.france24.com/fr/direct', category: 'News', country: 'France', language: 'English' },
+    { id: 'france24', name: 'France 24 English', logo: '🗼', url: 'https://static.france24.com/live/F24_EN_LO_HLS/live_web.m3u8', category: 'News', country: 'France', language: 'English' },
     { id: 'euronews', name: 'Euronews', logo: '🇪🇺', url: 'https://euronews-prod-samsung-dplus-en.akamaized.net/hls/live/2040842/eeuronewslive/index.m3u8', category: 'News', country: 'Europe', language: 'English' },
-    { id: 'f24ar', name: 'France 24 Arabic', logo: '🌙', url: 'https://live-hls-web-aje.getaj.net/AJE/01.m3u8', category: 'News', country: 'France', language: 'Arabic' },
+    { id: 'f24ar', name: 'France 24 Arabic', logo: '🌙', url: 'https://static.france24.com/live/F24_AR_LO_HLS/live_web.m3u8', category: 'News', country: 'France', language: 'Arabic' },
     { id: 'test1', name: 'HD Test Stream', logo: '📽️', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Entertainment', country: 'Global', language: 'English' },
-    { id: 'citytv', name: 'Citytv Canada', logo: '🏙️', url: 'https://citytv.com/live', category: 'Entertainment', country: 'Canada', language: 'English' },
-    // SL Channels
-    { id: 'itn', name: 'ITN Sri Lanka', logo: '📺', url: 'https://222103-hls.akamaized.net/668828a00bf80aa436254876/live_aabd3d003af211efadcf7986aa245789/rewind-3600.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+
+    // SL Channels (Sri Lanka)
+    { id: 'itn', name: 'ITN Sri Lanka', logo: '📺', url: 'https://live.itn.lk/itn/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'rupa', name: 'Rupavahini', logo: '🏛️', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://edge2-moblive.yuppcdn.net/transsd/smil:sirtv09.smil/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://edge3-moblive.yuppcdn.net/transhd2/smil:detv04.smil/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'swarna', name: 'Swarnavahini', logo: '💎', url: 'https://edge1-moblive.yuppcdn.net/drm/smil:swarnawahinidrm.smil/manifest.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'swarna', name: 'Swarnavahini', logo: '💎', url: 'https://jk3lz8xklw79-hls-live.5centscdn.net/live/6226f7cbe59e99a90b5cef6f94f966fd.sdp/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'http://61.245.163.69:1935/live/hiru.stream/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'supreme', name: 'Supreme TV', logo: '🏆', url: 'http://112.134.144.172:80/live/supreme/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'tnl', name: 'TNL TV', logo: '📡', url: 'http://61.245.163.69:1935/live/tnl.stream/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'English' },
+    { id: 'tnl', name: 'TNL TV', logo: '📡', url: 'https://edge3-moblive.yuppcdn.net/transsd/smil:tnl12.smil/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'English' },
+    { id: 'tv1', name: 'TV 1', logo: '📺', url: 'https://d3ssd0juqbxbw.cloudfront.net/mtvsinstlive/master.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'islandsports', name: 'Island Sports', logo: '🏀', url: 'http://61.245.163.69:1935/live/islandsports.stream/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'test_hls', name: 'HLS Test (Mux)', logo: '🛠️', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Entertainment', country: 'Global', language: 'English' },
 ];
 
 // --- IPTV-ORG PLAYLISTS (10,000+ free world channels) ---
@@ -100,7 +100,7 @@ function parseM3U(text: string, defaultCategory: string): Channel[] {
             current.id = `iptv_${Math.random().toString(36).substr(2, 9)}`;
             if (!current.logo || current.logo === '') current.logo = '📺';
             channels.push(current as Channel);
-            current = null;
+            current = null; // Reset for next channel
         }
     }
     return channels;
@@ -123,13 +123,14 @@ const GET_PROXY_URL = (proxy: string, source: string) => {
 // MAIN APP COMPONENT
 // ============================
 export default function ShazanTVApp() {
-    const [allChannels, setAllChannels] = useState<Channel[]>(BUILTIN_CHANNELS);
+    const [builtinChannels] = useState<Channel[]>(BUILTIN_CHANNELS);
+    const [localChannels, setLocalChannels] = useState<Channel[]>([]);
     const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
     const [activeHost, setActiveHost] = useState(FREE_HOSTS[0]);
     const [activeCategory, setActiveCategory] = useState('All');
     const [isSpoofingActive, setIsSpoofingActive] = useState(false);
     const [activeProxyIndex, setActiveProxyIndex] = useState(0);
-    const [status, setStatus] = useState('Ready — 5 Channels Loaded');
+    const [status, setStatus] = useState('Ready — Loaded');
     const [searchQuery, setSearchQuery] = useState('');
     const [isLocked, setIsLocked] = useState(false);
     const [showUnlockPrompt, setShowUnlockPrompt] = useState(false);
@@ -141,11 +142,41 @@ export default function ShazanTVApp() {
     const [customM3uUrl, setCustomM3uUrl] = useState('');
     const [customM3uLoading, setCustomM3uLoading] = useState(false);
 
-    const [logs, setLogs] = useState<string[]>(['System Ready.']);
+    // Derived state for All Channels
+    const allChannels = useMemo(() => [...builtinChannels, ...localChannels], [builtinChannels, localChannels]);
+
+    // --- PERSISTENCE LOGIC ---
+    useEffect(() => {
+        const savedChannels = localStorage.getItem('shazan_custom_channels');
+        if (savedChannels) {
+            try {
+                setLocalChannels(JSON.parse(savedChannels));
+            } catch (e) { addLog('ERR: Failed to load storage'); }
+        }
+
+        const savedPlaylists = localStorage.getItem('shazan_playlists');
+        if (savedPlaylists) {
+            try {
+                setLoadedPlaylists(new Set(JSON.parse(savedPlaylists)));
+            } catch (e) { console.error('Failed to load playlists'); }
+        }
+    }, []);
+
+    useEffect(() => {
+        if (localChannels.length > 0) {
+            localStorage.setItem('shazan_custom_channels', JSON.stringify(localChannels));
+        }
+    }, [localChannels]);
+
+    useEffect(() => {
+        localStorage.setItem('shazan_playlists', JSON.stringify(Array.from(loadedPlaylists)));
+    }, [loadedPlaylists]);
+
+    const [logs, setLogs] = useState<string[]>(['System Ready. App initialized.']);
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
-    const hlsRef = useRef<Hls | null>(null);
+    const hlsRef = useRef<any>(null);
     const proxyRetryRef = useRef<number>(0);
     const heartbeatRef = useRef<any>(null);
 
@@ -163,11 +194,17 @@ export default function ShazanTVApp() {
         setStatus(`Loading ${playlist.name}...`);
         try {
             const proxyUrl = GET_PROXY_URL(CORS_PROXIES[0], playlist.url);
-            const res = await fetch(proxyUrl);
+            const headers: any = { 'X-Requested-With': 'XMLHttpRequest' };
+            if (isSpoofingActive && activeHost.host !== 'direct') {
+                headers['X-Online-Host'] = activeHost.host;
+                headers['X-Forwarded-Host'] = activeHost.host;
+            }
+
+            const res = await fetch(proxyUrl, { headers });
             if (!res.ok) throw new Error('Failed');
             const text = await res.text();
             const parsed = parseM3U(text, playlist.category);
-            setAllChannels((prev: any[]) => {
+            setLocalChannels((prev: any[]) => {
                 const existingUrls = new Set(prev.map((c: any) => c.url));
                 const unique = parsed.filter((c: any) => !existingUrls.has(c.url));
                 return [...prev, ...unique];
@@ -186,34 +223,73 @@ export default function ShazanTVApp() {
         } finally {
             setLoadingPlaylist(null);
         }
-    }, [loadedPlaylists]);
+    }, [loadedPlaylists, isSpoofingActive, activeHost, addLog]);
 
     // --- LOAD CUSTOM M3U URL ---
     const loadCustomM3U = async () => {
         if (!customM3uUrl.trim()) return;
+        const inputUrl = customM3uUrl.trim();
         setCustomM3uLoading(true);
-        setStatus('Loading custom playlist...');
+        setStatus('Processing...');
+        addLog(`Loading: ${inputUrl.substring(0, 30)}...`);
+
         try {
-            if (customM3uUrl.toLowerCase().endsWith('.ehi')) {
-                setStatus('⚠️ EHI files are for HTTP Injector, not for M3U playlists.');
+            if (inputUrl.toLowerCase().endsWith('.ehi')) {
+                setStatus('⚠️ EHI files are not supported');
                 setCustomM3uLoading(false);
                 return;
             }
-            const proxyUrl = GET_PROXY_URL(CORS_PROXIES[0], customM3uUrl.trim());
-            const res = await fetch(proxyUrl);
-            if (!res.ok) throw new Error('Failed to fetch');
-            const text = await res.text();
-            const parsed = parseM3U(text, 'Custom');
-            if (parsed.length === 0) throw new Error('No channels found');
-            setAllChannels((prev: Channel[]) => {
-                const existingUrls = new Set(prev.map((c: Channel) => c.url));
-                const unique = parsed.filter((c: Channel) => !existingUrls.has(c.url));
-                return [...prev, ...unique];
-            });
-            setStatus(`✅ Added ${parsed.length} channels from custom M3U`);
-            setCustomM3uUrl('');
+
+            const proxyUrl = GET_PROXY_URL(CORS_PROXIES[0], inputUrl);
+            const headers: any = { 'X-Requested-With': 'XMLHttpRequest' };
+            if (isSpoofingActive && activeHost.host !== 'direct') {
+                headers['X-Online-Host'] = activeHost.host;
+                headers['X-Forwarded-Host'] = activeHost.host;
+            }
+
+            let parsed: Channel[] = [];
+            try {
+                const res = await fetch(proxyUrl, { headers });
+                if (res.ok) {
+                    const text = await res.text();
+                    parsed = parseM3U(text, 'Custom');
+                }
+            } catch (e) {
+                addLog('Fetch failed, trying as direct stream...');
+            }
+
+            // Fallback: If parsing fails or returns 0, but it's a valid-looking URL, add as single channel
+            if (parsed.length === 0 && (inputUrl.includes('.m3u8') || inputUrl.startsWith('http'))) {
+                parsed = [{
+                    id: `custom_${Date.now()}`,
+                    name: 'Custom Stream',
+                    url: inputUrl,
+                    category: 'Custom',
+                    logo: '🔗'
+                }];
+                addLog('Saved as single stream.');
+            }
+
+            if (parsed.length > 0) {
+                setLocalChannels((prev: Channel[]) => {
+                    const existingUrls = new Set(prev.map((c: Channel) => c.url));
+                    const unique = parsed.filter((c: Channel) => !existingUrls.has(c.url));
+                    return [...unique, ...prev]; // Newest first
+                });
+
+                // CRITICAL: Force save to localStorage immediately for reliability
+                const existing = JSON.parse(localStorage.getItem('shazan_custom_channels') || '[]');
+                const merged = [...parsed, ...existing].slice(0, 500);
+                localStorage.setItem('shazan_custom_channels', JSON.stringify(merged));
+
+                setStatus(`✅ Saved ${parsed.length} channels`);
+                setCustomM3uUrl('');
+            } else {
+                throw new Error('No valid streams found');
+            }
         } catch (err: any) {
-            setStatus('⚠️ Failed to load M3U — check URL or CORS');
+            addLog(`Error: ${err.message}`);
+            setStatus('⚠️ Failed to load');
         } finally {
             setCustomM3uLoading(false);
         }
@@ -221,12 +297,16 @@ export default function ShazanTVApp() {
 
     // --- PLAYER LOGIC ---
     const initializePlayer = useCallback((channel: Channel) => {
-        if (!videoRef.current) return;
+        if (!videoRef.current) {
+            addLog('ERR: Video Ref missing');
+            return;
+        }
         const video = videoRef.current;
         const source = channel.url;
 
-        addLog(`Connecting to: ${channel.name}...`);
-        setStatus('Connecting...');
+        addLog(`Attempting: ${channel.name}`);
+        addLog(`URL: ${source.substring(0, 40)}...`);
+        setStatus('Initializing Pipeline...');
         setShowPlayOverlay(false);
         setIsPlaying(false);
 
@@ -241,20 +321,21 @@ export default function ShazanTVApp() {
             navigator.mediaSession.setActionHandler('pause', () => video.pause());
         }
 
-        const isProxyNeeded = source.includes('iptv-org') || source.includes('github') || !source.startsWith('https') || source.includes('yuppcdn') || source.includes('akamaized.net') || source.includes('dialog.lk');
+        const shouldForceProxy = isSpoofingActive && activeHost.host !== 'direct';
+        const isProxyNeeded = shouldForceProxy || source.includes('iptv-org') || source.includes('github') || !source.startsWith('https') || source.includes('yuppcdn') || source.includes('dialog.lk') || source.includes('yupptv');
 
         let proxyToUse = CORS_PROXIES[activeProxyIndex % CORS_PROXIES.length];
-        if (isProxyNeeded && proxyToUse === 'DIRECT' && proxyRetryRef.current === 0) {
-            proxyToUse = CORS_PROXIES[0]; // Auto-force Local Proxy for SL/Restricted Links
+
+        if (shouldForceProxy && proxyToUse === 'DIRECT') {
+            proxyToUse = CORS_PROXIES[0];
+        } else if (isProxyNeeded && proxyToUse === 'DIRECT' && proxyRetryRef.current === 0) {
+            proxyToUse = CORS_PROXIES[0];
         }
 
         let finalUrl = GET_PROXY_URL(proxyToUse, source);
 
-        if (proxyToUse === '/api/proxy?url=') {
-            addLog('Mode: LOCAL CLOUD PROXY (High Compatibility)');
-        }
-
-        addLog(`Route: ${proxyToUse === 'DIRECT' ? 'ISP/Direct' : 'Filtered Node'}`);
+        addLog(`Mode: ${shouldForceProxy ? 'Dialog Bypass' : 'Standard'} | Loading: ${channel.name}`);
+        addLog(`Route: ${proxyToUse === 'DIRECT' ? 'Direct' : 'Proxied'}`);
 
         const tryAlternative = () => {
             const nextIndex = (activeProxyIndex + 1) % CORS_PROXIES.length;
@@ -301,16 +382,28 @@ export default function ShazanTVApp() {
                 maxBufferLength: 30,
                 manifestLoadingMaxRetry: 15,
                 levelLoadingMaxRetry: 15,
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36',
+                    'Accept': '*/*',
+                    // Note: targetUrl and request are not available in client-side Hls.js context.
+                    // These headers are typically set by the proxy server itself or via xhrSetup.
+                    // The instruction implies server-side proxy logic, but the edit is for client-side Hls.js.
+                    // For client-side Hls.js, we can only set headers that are known or derived from the client context.
+                    // The existing xhrSetup already handles X-Online-Host and X-Forwarded-Host.
+                    // Adding these here directly would require 'targetUrl' and 'request' which are not defined.
+                    // I will add the static headers as requested, but omit the conditional proxy headers
+                    // as they are handled by xhrSetup or belong on the server-side proxy.
+                },
                 manifestLoadingTimeOut: 20000,
                 xhrSetup: (xhr: XMLHttpRequest, url: string) => {
                     xhr.withCredentials = false;
                     // Advanced Dialog Spoofing Headers
                     if (isSpoofingActive && activeHost.host !== 'direct') {
+                        // Standard spoofing headers used for Dialog/SL carriers
                         xhr.setRequestHeader('X-Online-Host', activeHost.host);
                         xhr.setRequestHeader('X-Forwarded-Host', activeHost.host);
-                        xhr.setRequestHeader('X-Config-Host', activeHost.host);
                     }
-                    // Optional: Custom User Agent for some proxies
+                    // Always forward X-Requested-With for proxy compatibility
                     xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
                 }
             });
@@ -336,10 +429,11 @@ export default function ShazanTVApp() {
 
             hls.on(Hls.Events.ERROR, (_: any, data: any) => {
                 if (data.fatal) {
+                    addLog(`FATAL: ${data.details} | Response: ${data.response?.code || 'None'}`);
                     switch (data.type) {
                         case Hls.ErrorTypes.NETWORK_ERROR:
-                            addLog(`Network Error: ${data.details} (${data.response?.code || 'No Code'})`);
-                            if (data.details === 'manifestLoadError' || data.details === 'levelLoadError' || data.response?.code === 0) {
+                            addLog(`Network Fail: ${data.response?.code === 403 ? 'Carrier Blocked (403)' : data.details}`);
+                            if (data.details === 'manifestLoadError' || data.details === 'levelLoadError' || data.response?.code === 0 || data.response?.code === 403) {
                                 tryAlternative();
                             } else {
                                 hls.startLoad();
@@ -370,11 +464,19 @@ export default function ShazanTVApp() {
 
     useEffect(() => {
         if (selectedChannel) {
-            initializePlayer(selectedChannel);
-            if (scrollRef.current) scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+            // Give a small delay to ensure refs are ready
+            const timer = setTimeout(() => {
+                initializePlayer(selectedChannel);
+            }, 100);
+            return () => {
+                clearTimeout(timer);
+                if (hlsRef.current) {
+                    hlsRef.current.destroy();
+                    hlsRef.current = null;
+                }
+            };
         }
-        return () => { if (hlsRef.current) hlsRef.current.destroy(); };
-    }, [selectedChannel, activeHost, isSpoofingActive, activeProxyIndex, initializePlayer]);
+    }, [selectedChannel, isSpoofingActive, activeHost, activeProxyIndex, initializePlayer]);
 
     // Handle Rotation & Fullscreen Orientation
     useEffect(() => {
