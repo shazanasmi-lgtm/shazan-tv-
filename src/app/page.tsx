@@ -43,15 +43,14 @@ const BUILTIN_CHANNELS: Channel[] = [
     // SL Channels
     { id: 'itn', name: 'ITN Sri Lanka', logo: '📺', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'rupa', name: 'Rupavahini', logo: '🏛️', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://live.itn.lk/sirasa/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://live.itn.lk/derana/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'https://live.itn.lk/hiru/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://edge2-moblive.yuppcdn.net/transsd/smil:sirtv09.smil/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://edge3-moblive.yuppcdn.net/transhd2/smil:detv04.smil/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'http://61.245.163.69:1935/live/hiru.stream/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'supreme', name: 'Supreme TV', logo: '🏆', url: 'http://112.134.144.172:80/live/supreme/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'islandsports', name: 'Island Sports', logo: '🏀', url: 'http://61.245.163.69:1935/live/islandsports.stream/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'tnl', name: 'TNL TV', logo: '📡', url: 'http://61.245.163.69:1935/live/tnl.stream/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'English' },
     { id: 'match1', name: 'LIVE MATCH 1', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
     { id: 'match2', name: 'LIVE MATCH 2', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
-    { id: 'supreme', name: 'Supreme TV', logo: '🏆', url: 'http://112.134.144.172:80/live/supreme/index.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'match3', name: 'Match Stream 3', logo: '⚽', url: 'http://61.245.163.69:1935/live/sirasa.stream/playlist.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
-    { id: 'match4', name: 'Match Stream 4', logo: '🏀', url: 'http://61.245.163.69:1935/live/islandsports.stream/playlist.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
-    { id: 'match5', name: 'Match Stream 5', logo: '🎾', url: 'http://112.134.144.172:80/live/supreme/index.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'Sinhala' },
 ];
 
 // --- IPTV-ORG PLAYLISTS (10,000+ free world channels) ---
@@ -113,6 +112,7 @@ const CORS_PROXIES = [
     'https://thingproxy.freeboard.io/fetch/',
     'https://api.allorigins.win/raw?url=',
     'https://corsproxy.io/?',
+    'https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=10000&country=all&ssl=all&anonymity=all&url=',
 ];
 const CORS_PROXY = CORS_PROXIES[0]; // Default to allorigins (most reliable for direct streams)
 
@@ -142,6 +142,8 @@ export default function ShazanTVApp() {
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const hlsRef = useRef<Hls | null>(null);
+    const proxyRetryRef = useRef<number>(0);
+    const heartbeatRef = useRef<any>(null);
 
     // Unique categories from loaded channels
     const CATEGORIES = ['All', ...Array.from(new Set(allChannels.map((c: Channel) => c.category))).sort()];
@@ -224,11 +226,12 @@ export default function ShazanTVApp() {
             navigator.mediaSession.setActionHandler('pause', () => video.pause());
         }
 
-        const isProxyNeeded = source.includes('iptv-org') || source.includes('github') || !source.startsWith('https');
+        const isProxyNeeded = source.includes('iptv-org') || source.includes('github') || !source.startsWith('https') || source.includes('yuppcdn') || source.includes('itn.lk');
 
         // Strategy: 1. Selected Proxy, 2. Direct
         let finalUrl = source;
-        const currentProxy = CORS_PROXIES[activeProxyIndex];
+        const currentProxyIndex = activeProxyIndex % CORS_PROXIES.length;
+        const currentProxy = CORS_PROXIES[currentProxyIndex];
 
         if (isSpoofingActive) {
             finalUrl = `${currentProxy}${encodeURIComponent(source)}`;
@@ -238,15 +241,26 @@ export default function ShazanTVApp() {
             console.log('Using CORS Proxy:', finalUrl);
         }
 
-        const tryAlternative = (retryCount: number) => {
-            if (retryCount >= CORS_PROXIES.length || !hlsRef.current) {
-                setStatus('❌ Stream Unavailable — Try another channel');
+        const tryAlternative = () => {
+            if (proxyRetryRef.current >= CORS_PROXIES.length) {
+                setStatus('❌ All Proxies Failed — Source Down');
+                proxyRetryRef.current = 0;
                 return;
             }
-            const altProxy = CORS_PROXIES[retryCount];
-            const altUrl = `${altProxy}${encodeURIComponent(source)}`;
-            setStatus(`🔄 Retrying with Proxy ${retryCount + 1}...`);
-            hlsRef.current.loadSource(altUrl);
+            proxyRetryRef.current += 1;
+            const nextIndex = (activeProxyIndex + 1) % CORS_PROXIES.length;
+            setStatus(`🔄 Routing via Proxy ${proxyRetryRef.current + 1}/${CORS_PROXIES.length}...`);
+            setActiveProxyIndex(nextIndex);
+        };
+
+        const startHeartbeat = () => {
+            if (heartbeatRef.current) clearTimeout(heartbeatRef.current);
+            heartbeatRef.current = setTimeout(() => {
+                if (status.includes('Loading') || status.includes('Connecting')) {
+                    console.log('Heartbeat: Still loading, rotating proxy');
+                    tryAlternative();
+                }
+            }, 12000);
         };
 
         if (hlsRef.current) { hlsRef.current.destroy(); }
@@ -274,6 +288,8 @@ export default function ShazanTVApp() {
             hls.attachMedia(video);
 
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                proxyRetryRef.current = 0;
+                if (heartbeatRef.current) clearTimeout(heartbeatRef.current);
                 const playPromise = video.play();
                 if (playPromise !== undefined) {
                     playPromise
@@ -290,11 +306,9 @@ export default function ShazanTVApp() {
                     switch (data.type) {
                         case Hls.ErrorTypes.NETWORK_ERROR:
                             console.error('HLS Network Error:', data);
-                            if (data.details === 'manifestLoadError') {
-                                setStatus('🔄 Proxy Error - Switching Proxy...');
-                                setActiveProxyIndex((prev: number) => (prev + 1) % CORS_PROXIES.length);
+                            if (data.details === 'manifestLoadError' || data.details === 'levelLoadError' || data.response?.code === 0) {
+                                tryAlternative();
                             } else {
-                                setStatus('⚠️ Network Error - Retrying...');
                                 hls.startLoad();
                             }
                             break;
@@ -305,8 +319,7 @@ export default function ShazanTVApp() {
                             break;
                         default:
                             console.error('HLS Fatal Error:', data);
-                            setStatus('⚠️ Error - Cycling Proxy...');
-                            setActiveProxyIndex((prev: number) => (prev + 1) % CORS_PROXIES.length);
+                            tryAlternative();
                             break;
                     }
                 } else {
