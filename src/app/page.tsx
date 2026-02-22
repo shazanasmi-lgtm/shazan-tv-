@@ -43,9 +43,9 @@ const BUILTIN_CHANNELS: Channel[] = [
     // SL Channels
     { id: 'itn', name: 'ITN Sri Lanka', logo: '📺', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'rupa', name: 'Rupavahini', logo: '🏛️', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://edge2-moblive.yuppcdn.net/transsd/smil:sirtv09.smil/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://edge3-moblive.yuppcdn.net/transhd2/smil:detv04.smil/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'https://sl-iptv.top/hiru/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'match1', name: 'LIVE MATCH 1', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
     { id: 'match2', name: 'LIVE MATCH 2', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
     { id: 'supreme', name: 'Supreme TV', logo: '🏆', url: 'http://112.134.144.172:80/live/supreme/index.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'Sinhala' },
@@ -109,9 +109,10 @@ function parseM3U(text: string, defaultCategory: string): Channel[] {
 
 // --- CONFIG & UTILS ---
 const CORS_PROXIES = [
+    'https://thingproxy.freeboard.io/fetch/',
     'https://api.allorigins.win/raw?url=',
-    'https://cors-anywhere.herokuapp.com/',
     'https://corsproxy.io/?',
+    'https://proxy.cors.sh/', // Backup
 ];
 const CORS_PROXY = CORS_PROXIES[0]; // Default to allorigins (most reliable for direct streams)
 
@@ -286,18 +287,23 @@ export default function ShazanTVApp() {
                     switch (data.type) {
                         case Hls.ErrorTypes.NETWORK_ERROR:
                             console.error('HLS Network Error:', data);
-                            setStatus('⚠️ Network Error — Retrying...');
-                            hls.startLoad();
+                            if (data.details === 'manifestLoadError') {
+                                setStatus('🔄 Proxy Error - Switching Proxy...');
+                                setActiveProxyIndex((prev: number) => (prev + 1) % CORS_PROXIES.length);
+                            } else {
+                                setStatus('⚠️ Network Error - Retrying...');
+                                hls.startLoad();
+                            }
                             break;
                         case Hls.ErrorTypes.MEDIA_ERROR:
                             console.error('HLS Media Error:', data);
-                            setStatus('⚠️ Media Error — Recovering...');
+                            setStatus('⚠️ Media Error - Recovering...');
                             hls.recoverMediaError();
                             break;
                         default:
                             console.error('HLS Fatal Error:', data);
-                            setStatus('⚠️ Fatal Error — Trying Alternative...');
-                            tryAlternative(1);
+                            setStatus('⚠️ Error - Cycling Proxy...');
+                            setActiveProxyIndex((prev: number) => (prev + 1) % CORS_PROXIES.length);
                             break;
                     }
                 } else {
