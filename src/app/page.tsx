@@ -43,9 +43,15 @@ const BUILTIN_CHANNELS: Channel[] = [
     // SL Channels
     { id: 'itn', name: 'ITN Sri Lanka', logo: '📺', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'rupa', name: 'Rupavahini', logo: '🏛️', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://itv-org.github.io/iptv/countries/lk.m3u', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://itv-org.github.io/iptv/countries/lk.m3u', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'https://itv-org.github.io/iptv/countries/lk.m3u', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://sl-iptv.top/sirasa/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://sl-iptv.top/derana/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'https://sl-iptv.top/hiru/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'match1', name: 'LIVE MATCH (Free Data)', logo: '🏏', url: 'http://61.245.163.69:1935/live/sirasa.stream/playlist.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
+    { id: 'match2', name: 'LIVE MATCH 2', logo: '🏏', url: 'http://61.245.163.69:1935/live/islandsports.stream/playlist.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
+    { id: 'supreme', name: 'Supreme TV (Matches)', logo: '🏆', url: 'http://112.134.144.172:80/live/supreme/index.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'match3', name: 'Match Stream 3', logo: '⚽', url: 'http://61.245.163.69:1935/live/sirasa.stream/playlist.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
+    { id: 'match4', name: 'Match Stream 4', logo: '🏀', url: 'http://61.245.163.69:1935/live/islandsports.stream/playlist.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
+    { id: 'match5', name: 'Match Stream 5', logo: '🎾', url: 'http://112.134.144.172:80/live/supreme/index.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'Sinhala' },
 ];
 
 // --- IPTV-ORG PLAYLISTS (10,000+ free world channels) ---
@@ -101,7 +107,13 @@ function parseM3U(text: string, defaultCategory: string): Channel[] {
     return channels;
 }
 
-const CORS_PROXY = 'https://corsproxy.io/?';
+// --- CONFIG & UTILS ---
+const CORS_PROXIES = [
+    'https://api.allorigins.win/raw?url=',
+    'https://cors-anywhere.herokuapp.com/',
+    'https://corsproxy.io/?',
+];
+const CORS_PROXY = CORS_PROXIES[2]; // Default to corsproxy.io
 
 // ============================
 // MAIN APP COMPONENT
@@ -126,6 +138,7 @@ export default function ShazanTVApp() {
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
     const hlsRef = useRef<Hls | null>(null);
 
     // Unique categories from loaded channels
@@ -147,7 +160,9 @@ export default function ShazanTVApp() {
                 return [...prev, ...unique];
             });
             setLoadedPlaylists((prev: Set<string>) => new Set([...prev, playlist.id]));
+            setActiveCategory(playlist.category);
             setStatus(`✅ ${playlist.name} loaded — ${parsed.length} channels`);
+            if (scrollRef.current) scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (err: any) {
             console.error(`Error loading playlist ${playlist.name}:`, err);
             setStatus(`⚠️ Could not load ${playlist.name}`);
@@ -209,30 +224,51 @@ export default function ShazanTVApp() {
 
         const isProxyNeeded = source.includes('iptv-org') || source.includes('github') || !source.startsWith('https');
 
+        // Strategy: 1. Spoofing Proxy, 2. Direct, 3. CORS Proxy
         let finalUrl = source;
         if (isSpoofingActive && activeHost.id !== 'direct') {
-            finalUrl = `https://p.pivp.lk/proxy?url=${encodeURIComponent(source)}&host=${activeHost.host}`;
+            // If the user selects a free host, we proxy and trick the ISP
+            if (activeHost.id === 'dtv' || activeHost.id === 'viu' || activeHost.id === 'pivp' || activeHost.id === 'whatsapp' || activeHost.id === 'match') {
+                // We use the proxy that maps the host
+                finalUrl = `${CORS_PROXY}${encodeURIComponent(source)}&host=${activeHost.host}`;
+            } else {
+                finalUrl = `${CORS_PROXY}${encodeURIComponent(source)}`;
+            }
         } else if (isProxyNeeded) {
-            // Use corsproxy.io as a fallback for known problematic sources
             finalUrl = `${CORS_PROXY}${encodeURIComponent(source)}`;
+            console.log('Using CORS Proxy:', finalUrl);
         }
+
+        const tryAlternative = (retryCount: number) => {
+            if (retryCount >= CORS_PROXIES.length || !hlsRef.current) {
+                setStatus('❌ Stream Unavailable — Try another channel');
+                return;
+            }
+            const altProxy = CORS_PROXIES[retryCount];
+            const altUrl = `${altProxy}${encodeURIComponent(source)}`;
+            setStatus(`🔄 Retrying with Proxy ${retryCount + 1}...`);
+            hlsRef.current.loadSource(altUrl);
+        };
 
         if (hlsRef.current) { hlsRef.current.destroy(); }
 
         if (Hls.isSupported()) {
+            console.log('HLS Supported. Initializing for:', channel.name);
             const hls = new Hls({
                 enableWorker: true,
                 lowLatencyMode: true,
                 backBufferLength: 90,
                 maxBufferSize: 30 * 1000 * 1000,
                 maxBufferLength: 30,
-                manifestLoadingMaxRetry: 10,
-                levelLoadingMaxRetry: 10,
+                manifestLoadingMaxRetry: 15,
+                levelLoadingMaxRetry: 15,
+                manifestLoadingTimeOut: 20000,
                 xhrSetup: (xhr: XMLHttpRequest) => {
                     xhr.withCredentials = false;
                 }
             });
 
+            setStatus('Loading Steam...');
             hls.loadSource(finalUrl);
             hls.attachMedia(video);
 
@@ -249,16 +285,19 @@ export default function ShazanTVApp() {
                 if (data.fatal) {
                     switch (data.type) {
                         case Hls.ErrorTypes.NETWORK_ERROR:
-                            setStatus('⚠️ Network Error — Retrying');
+                            console.error('HLS Network Error:', data);
+                            setStatus('⚠️ Network Error — Retrying...');
                             hls.startLoad();
                             break;
                         case Hls.ErrorTypes.MEDIA_ERROR:
-                            setStatus('⚠️ Media Error — Recovering');
+                            console.error('HLS Media Error:', data);
+                            setStatus('⚠️ Media Error — Recovering...');
                             hls.recoverMediaError();
                             break;
                         default:
-                            setStatus('⚠️ Fatal Error — Restarting');
-                            initializePlayer(channel);
+                            console.error('HLS Fatal Error:', data);
+                            setStatus('⚠️ Fatal Error — Trying Alternative...');
+                            tryAlternative(1);
                             break;
                     }
                 } else {
@@ -275,7 +314,10 @@ export default function ShazanTVApp() {
     }, [isSpoofingActive, activeHost]);
 
     useEffect(() => {
-        if (selectedChannel) initializePlayer(selectedChannel);
+        if (selectedChannel) {
+            initializePlayer(selectedChannel);
+            if (scrollRef.current) scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+        }
         return () => { if (hlsRef.current) hlsRef.current.destroy(); };
     }, [selectedChannel, activeHost, isSpoofingActive, initializePlayer]);
 
@@ -343,18 +385,25 @@ export default function ShazanTVApp() {
                 <div className="absolute bottom-0 left-0 w-72 h-72 bg-purple-700/10 rounded-full blur-[100px]" />
             </div>
 
-            <div className="flex-1 overflow-y-auto relative z-10 pb-28 no-scrollbar">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto relative z-10 pb-28 no-scrollbar">
 
                 {/* HEADER */}
                 <header className="px-6 pt-6 pb-4 flex items-center justify-between sticky top-0 bg-[#0a0a0f]/80 backdrop-blur-xl z-40 border-b border-white/5">
-                    <div>
+                    <div className="flex flex-col">
+                        <h1 className="text-xl font-black text-white tracking-tighter flex items-center gap-2">
+                            SHAZAN <span className="bg-blue-600 px-1.5 py-0.5 rounded text-[10px] tracking-normal">TV</span>
+                        </h1>
                         <div className="flex items-center gap-2">
-                            <Activity size={16} className="text-blue-400" />
-                            <h1 className="text-xl font-black bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent tracking-tight">SHAZAN TV</h1>
+                            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{status}</span>
+                            {selectedChannel && (
+                                <button onClick={() => initializePlayer(selectedChannel)} className="text-blue-500 hover:text-blue-400">
+                                    <RefreshCw size={10} className={status.includes('...') ? 'animate-spin' : ''} />
+                                </button>
+                            )}
                         </div>
-                        <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">{allChannels.length.toLocaleString()} Channels Loaded</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-3">
+                        <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">{allChannels.length.toLocaleString()} Channels Loaded</p>
                         <button onClick={() => setShowPlaylistPanel(!showPlaylistPanel)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/20 border border-blue-500/30 rounded-xl text-[10px] font-black text-blue-400">
                             <Globe size={12} /> ADD
                         </button>
@@ -547,13 +596,14 @@ export default function ShazanTVApp() {
                         </div>
                     </section>
                 )}
-                {/* DIALOG ZERO DATA HELPER BANNER */}
-                <section className="px-4 mb-4">
-                    <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/20 border border-blue-500/20 rounded-2xl p-4">
-                        <div className="flex items-center justify-between mb-3">
+                {/* DIALOG ZERO DATA INFO */}
+                <section className="px-6 py-4">
+                    <div className="bg-gradient-to-br from-blue-900/40 to-indigo-900/40 border border-blue-500/20 rounded-3xl p-5 shadow-inner">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center">
+                                <Zap className="text-white" size={20} />
+                            </div>
                             <div>
-                                <p className="text-[10px] font-black text-blue-300 uppercase tracking-widest">Dialog Zero Data</p>
-                                <p className="text-[8px] text-gray-400 mt-0.5">Free watch via Dialog Zero Pack</p>
                             </div>
                             <a
                                 href="/shazan-tv.ehi"
@@ -612,7 +662,7 @@ export default function ShazanTVApp() {
                             <motion.button
                                 whileTap={{ scale: 0.94 }}
                                 key={channel.id}
-                                onClick={() => { setSelectedChannel(channel); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                onClick={() => { setSelectedChannel(channel); if (scrollRef.current) scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' }); }}
                                 className={`relative flex flex-col items-start p-3 rounded-2xl text-left transition-all group border ${selectedChannel?.id === channel.id
                                     ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.1)]'
                                     : 'bg-white/5 border-white/5 hover:bg-white/10'
@@ -645,13 +695,20 @@ export default function ShazanTVApp() {
 
             {/* BOTTOM NAV */}
             <nav className="fixed bottom-4 left-4 right-4 bg-[#13131f]/90 backdrop-blur-2xl rounded-[28px] px-4 py-3 flex items-center justify-around z-50 border border-white/10 shadow-2xl">
-                <button className="flex flex-col items-center gap-0.5 text-blue-400">
+                <button onClick={() => { setActiveCategory('All'); setShowPlaylistPanel(false); if (scrollRef.current) scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' }); }} className={`flex flex-col items-center gap-0.5 ${activeCategory === 'All' && !showPlaylistPanel ? 'text-blue-400' : 'text-gray-500'}`}>
                     <Tv size={18} /><span className="text-[7px] font-black">LIVE</span>
                 </button>
-                <button onClick={() => setShowPlaylistPanel(!showPlaylistPanel)} className="flex flex-col items-center gap-0.5 text-gray-500">
+                <button
+                    onClick={() => {
+                        const nextState = !showPlaylistPanel;
+                        setShowPlaylistPanel(nextState);
+                        if (nextState && scrollRef.current) scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className={`flex flex-col items-center gap-0.5 ${showPlaylistPanel ? 'text-blue-400' : 'text-gray-500'}`}
+                >
                     <Globe size={18} /><span className="text-[7px] font-black">WORLD</span>
                 </button>
-                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center shadow-xl shadow-blue-600/40 -mt-6 border-4 border-[#0a0a0f]">
+                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center shadow-xl shadow-blue-600/40 -mt-6 border-4 border-[#0a0a0f]" onClick={() => { if (scrollRef.current) scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' }); }}>
                     <Play size={18} fill="white" className="ml-0.5 text-white" />
                 </div>
                 <button onClick={() => setIsSpoofingActive(!isSpoofingActive)} className={`flex flex-col items-center gap-0.5 ${isSpoofingActive ? 'text-green-400' : 'text-gray-500'}`}>
