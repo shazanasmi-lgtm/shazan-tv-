@@ -43,9 +43,9 @@ const BUILTIN_CHANNELS: Channel[] = [
     // SL Channels
     { id: 'itn', name: 'ITN Sri Lanka', logo: '📺', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'rupa', name: 'Rupavahini', logo: '🏛️', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://live.itn.lk/sirasa/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://live.itn.lk/derana/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'https://live.itn.lk/hiru/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'match1', name: 'LIVE MATCH 1', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
     { id: 'match2', name: 'LIVE MATCH 2', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
     { id: 'supreme', name: 'Supreme TV', logo: '🏆', url: 'http://112.134.144.172:80/live/supreme/index.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'Sinhala' },
@@ -109,10 +109,10 @@ function parseM3U(text: string, defaultCategory: string): Channel[] {
 
 // --- CONFIG & UTILS ---
 const CORS_PROXIES = [
+    'https://api.codetabs.com/v1/proxy?quest=',
     'https://thingproxy.freeboard.io/fetch/',
     'https://api.allorigins.win/raw?url=',
     'https://corsproxy.io/?',
-    'https://proxy.cors.sh/', // Backup
 ];
 const CORS_PROXY = CORS_PROXIES[0]; // Default to allorigins (most reliable for direct streams)
 
@@ -278,7 +278,10 @@ export default function ShazanTVApp() {
                 if (playPromise !== undefined) {
                     playPromise
                         .then(() => { setIsPlaying(true); setStatus('🔴 Live — ' + channel.name); })
-                        .catch(() => { setShowPlayOverlay(true); setStatus('Ready — Tap to Play'); });
+                        .catch(() => {
+                            setShowPlayOverlay(true);
+                            setStatus('Ready — Tap Screen to Play');
+                        });
                 }
             });
 
