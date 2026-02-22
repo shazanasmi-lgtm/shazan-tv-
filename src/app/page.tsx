@@ -604,19 +604,40 @@ export default function ShazanTVApp() {
                                 <Zap className="text-white" size={20} />
                             </div>
                             <div>
+                                <h2 className="text-sm font-black text-white">Shazan TV Smart Bypass</h2>
+                                <p className="text-[10px] text-blue-300/80 font-bold uppercase tracking-wider">Watch without consuming data</p>
                             </div>
-                            <a
-                                href="/shazan-tv.ehi"
-                                download="shazan-tv.ehi"
-                                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 rounded-xl text-[9px] font-black text-white shadow-lg shadow-blue-600/30 hover:bg-blue-500 transition-colors"
-                            >
-                                ⬇️ Download EHI
-                            </a>
                         </div>
-                        <div className="bg-black/40 rounded-lg p-2 border border-white/5">
-                            <p className="text-[7px] text-gray-500 leading-relaxed italic">
-                                💡 <strong>How to use:</strong> Download the .ehi file, import it into the <strong>HTTP Injector</strong> app on your Android phone, connect it, and then refresh this page to watch TV without using your main data.
-                            </p>
+
+                        <div className="space-y-3">
+                            <div className="bg-black/30 rounded-2xl p-4 border border-white/5">
+                                <h3 className="text-[11px] font-black text-blue-400 mb-1 uppercase">How to use (Zero Data):</h3>
+                                <ul className="text-[10px] text-gray-400 space-y-1.5 font-bold">
+                                    <li className="flex gap-2"><span>1.</span><span>Turn on <b>BYPASS</b> (Zap icon) below until it's Green.</span></li>
+                                    <li className="flex gap-2"><span>2.</span><span>Go to <b>CRICKET</b> category to find match links.</span></li>
+                                    <li className="flex gap-2"><span>3.</span><span>These links bypass Dialog data tracking.</span></li>
+                                </ul>
+                            </div>
+
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setIsSpoofingActive(!isSpoofingActive)}
+                                    className={`flex-1 py-3 rounded-2xl font-black text-[10px] transition-all shadow-lg ${isSpoofingActive
+                                            ? 'bg-green-500 text-black shadow-green-500/20'
+                                            : 'bg-blue-600 text-white shadow-blue-600/20'
+                                        }`}
+                                >
+                                    {isSpoofingActive ? '✅ ACTIVE' : '🚀 ACTIVATE'}
+                                </button>
+                                <a
+                                    href="/shazan-tv.ehi"
+                                    download="shazan-tv.ehi"
+                                    className="px-4 py-3 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center text-[10px] font-black text-gray-400 hover:text-white transition-colors"
+                                    title="Download for HTTP Injector"
+                                >
+                                    EHI
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </section>
