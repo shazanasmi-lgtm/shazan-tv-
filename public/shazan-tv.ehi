@@ -17,7 +17,7 @@
     "username": "",
     "password": ""
   },
-  "payload": "GET / HTTP/1.1[crlf]Host: viu.lk[crlf]Upgrade: websocket[crlf][crlf]",
+  "payload": "GET / HTTP/1.1[crlf]Host: viu.lk[crlf]Connection: Upgrade[crlf]Upgrade: websocket[crlf]X-Online-Host: viu.lk[crlf][crlf]",
   "method": "GET",
   "udpTunnel": false,
   "dnsForward": "8.8.8.8",
@@ -26,11 +26,11 @@
   "connection": {
     "type": "HTTP",
     "host": "viu.lk",
-    "port": 8080,
+    "port": 80,
     "sslPinning": false
   },
   "dns": ["8.8.8.8", "8.8.4.4"],
   "customDns": false,
   "splitTunnel": false,
-  "remark": "Dialog Sri Lanka Zero Data Config for Shazan TV\nWorks with Dialog Viu Zero Pack\nSetup: Install HTTP Injector, import this file, connect"
+  "remark": "Dialog Sri Lanka Zero Data Config for Shazan TV\nWorks with Dialog Viu Free Domain\nSetup: Install HTTP Injector, import this file, connect, then open the web app"
 }
