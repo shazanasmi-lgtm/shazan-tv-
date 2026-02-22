@@ -41,11 +41,11 @@ const BUILTIN_CHANNELS: Channel[] = [
     { id: 'test1', name: 'HD Test Stream', logo: '📽️', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Entertainment', country: 'Global', language: 'English' },
     { id: 'citytv', name: 'Citytv Canada', logo: '🏙️', url: 'https://citytv.com/live', category: 'Entertainment', country: 'Canada', language: 'English' },
     // SL Channels
-    { id: 'itn', name: 'ITN Sri Lanka', logo: '📺', url: 'https://222103-hls.akamaized.net/668828a00bf80aa436254876/live_aabd3d003af211efadcf7986aa245789/rewind-3600.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'itn', name: 'ITN Sri Lanka', logo: '📺', url: 'https://live.itn.lk/itn/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'rupa', name: 'Rupavahini', logo: '🏛️', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://edge2-moblive.yuppcdn.net/transsd/smil:sirtv09.smil/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://edge3-moblive.yuppcdn.net/transhd2/smil:detv04.smil/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'http://61.245.163.69:1935/live/hiru.stream/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://live.itn.lk/sirasa/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://live.itn.lk/derana/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'https://live.itn.lk/hiru/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'supreme', name: 'Supreme TV', logo: '🏆', url: 'http://112.134.144.172:80/live/supreme/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'islandsports', name: 'Island Sports', logo: '🏀', url: 'http://61.245.163.69:1935/live/islandsports.stream/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'tnl', name: 'TNL TV', logo: '📡', url: 'http://61.245.163.69:1935/live/tnl.stream/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'English' },
@@ -250,14 +250,14 @@ export default function ShazanTVApp() {
 
         const tryAlternative = () => {
             if (proxyRetryRef.current >= CORS_PROXIES.length) {
-                setStatus('❌ All Proxies Failed — Source Down');
-                addLog('CRITICAL: All proxies exhausted.');
+                setStatus('❌ Source Down — Try Direct Mode');
+                addLog('CRITICAL: All proxies failed.');
                 proxyRetryRef.current = 0;
                 return;
             }
-            proxyRetryRef.current += 1;
             const nextIndex = (activeProxyIndex + 1) % CORS_PROXIES.length;
-            const msg = `Routing via Proxy ${proxyRetryRef.current + 1}/${CORS_PROXIES.length}...`;
+            proxyRetryRef.current += 1;
+            const msg = `Switching Proxy ${proxyRetryRef.current}/${CORS_PROXIES.length}...`;
             setStatus(`🔄 ${msg}`);
             addLog(msg);
             setActiveProxyIndex(nextIndex);
@@ -632,11 +632,14 @@ export default function ShazanTVApp() {
                     <div className="mt-3 bg-black/40 rounded-lg p-2 border border-white/5">
                         <div className="flex items-center justify-between mb-1">
                             <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Debug Console</span>
-                            <button onClick={() => setLogs([])} className="text-[8px] text-blue-400 hover:text-blue-300 px-1">Clear</button>
+                            <div className="flex gap-2">
+                                <button onClick={() => { proxyRetryRef.current = 0; initializePlayer(selectedChannel!); }} className="text-[8px] text-green-400 hover:text-green-300 font-bold px-1 uppercase">Retry</button>
+                                <button onClick={() => setLogs([])} className="text-[8px] text-gray-400 hover:text-white px-1">Clear</button>
+                            </div>
                         </div>
-                        <div className="space-y-0.5 max-h-[60px] overflow-y-auto no-scrollbar">
+                        <div className="space-y-0.5 max-h-[80px] overflow-y-auto no-scrollbar font-mono text-[7px]">
                             {logs.map((log, i) => (
-                                <div key={i} className="text-[7px] font-mono text-gray-400 border-l border-white/10 pl-1.5 py-0.5">
+                                <div key={i} className={`pl-1.5 py-0.5 border-l ${log.includes('CRITICAL') ? 'text-red-400 border-red-500' : log.includes('Matched') ? 'text-green-400 border-green-500' : 'text-gray-400 border-white/10'}`}>
                                     <span className="text-gray-600">[{new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}]</span> {log}
                                 </div>
                             ))}
