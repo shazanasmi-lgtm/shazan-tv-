@@ -43,12 +43,12 @@ const BUILTIN_CHANNELS: Channel[] = [
     // SL Channels
     { id: 'itn', name: 'ITN Sri Lanka', logo: '📺', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'rupa', name: 'Rupavahini', logo: '🏛️', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://sl-iptv.top/sirasa/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://sl-iptv.top/derana/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'https://sl-iptv.top/hiru/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'match1', name: 'LIVE MATCH (Free Data)', logo: '🏏', url: 'http://61.245.163.69:1935/live/sirasa.stream/playlist.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
-    { id: 'match2', name: 'LIVE MATCH 2', logo: '🏏', url: 'http://61.245.163.69:1935/live/islandsports.stream/playlist.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
-    { id: 'supreme', name: 'Supreme TV (Matches)', logo: '🏆', url: 'http://112.134.144.172:80/live/supreme/index.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'match1', name: 'LIVE MATCH 1', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
+    { id: 'match2', name: 'LIVE MATCH 2', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
+    { id: 'supreme', name: 'Supreme TV', logo: '🏆', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'match3', name: 'Match Stream 3', logo: '⚽', url: 'http://61.245.163.69:1935/live/sirasa.stream/playlist.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
     { id: 'match4', name: 'Match Stream 4', logo: '🏀', url: 'http://61.245.163.69:1935/live/islandsports.stream/playlist.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
     { id: 'match5', name: 'Match Stream 5', logo: '🎾', url: 'http://112.134.144.172:80/live/supreme/index.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'Sinhala' },
@@ -113,7 +113,7 @@ const CORS_PROXIES = [
     'https://cors-anywhere.herokuapp.com/',
     'https://corsproxy.io/?',
 ];
-const CORS_PROXY = CORS_PROXIES[2]; // Default to corsproxy.io
+const CORS_PROXY = CORS_PROXIES[0]; // Default to allorigins (most reliable for direct streams)
 
 // ============================
 // MAIN APP COMPONENT
@@ -254,9 +254,11 @@ export default function ShazanTVApp() {
 
         if (Hls.isSupported()) {
             console.log('HLS Supported. Initializing for:', channel.name);
+            console.log('Final URL to load:', finalUrl);
             const hls = new Hls({
                 enableWorker: true,
                 lowLatencyMode: true,
+                debug: true, // Turn on debug to see what's happening
                 backBufferLength: 90,
                 maxBufferSize: 30 * 1000 * 1000,
                 maxBufferLength: 30,
@@ -623,8 +625,8 @@ export default function ShazanTVApp() {
                                 <button
                                     onClick={() => setIsSpoofingActive(!isSpoofingActive)}
                                     className={`flex-1 py-3 rounded-2xl font-black text-[10px] transition-all shadow-lg ${isSpoofingActive
-                                            ? 'bg-green-500 text-black shadow-green-500/20'
-                                            : 'bg-blue-600 text-white shadow-blue-600/20'
+                                        ? 'bg-green-500 text-black shadow-green-500/20'
+                                        : 'bg-blue-600 text-white shadow-blue-600/20'
                                         }`}
                                 >
                                     {isSpoofingActive ? '✅ ACTIVE' : '🚀 ACTIVATE'}
