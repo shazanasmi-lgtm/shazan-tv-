@@ -41,10 +41,11 @@ const BUILTIN_CHANNELS: Channel[] = [
     { id: 'test1', name: 'HD Test Stream', logo: '📽️', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Entertainment', country: 'Global', language: 'English' },
     { id: 'citytv', name: 'Citytv Canada', logo: '🏙️', url: 'https://citytv.com/live', category: 'Entertainment', country: 'Canada', language: 'English' },
     // SL Channels
-    { id: 'itn', name: 'ITN Sri Lanka', logo: '📺', url: 'https://live.itn.lk/itn/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'itn', name: 'ITN Sri Lanka', logo: '📺', url: 'https://222103-hls.akamaized.net/668828a00bf80aa436254876/live_aabd3d003af211efadcf7986aa245789/rewind-3600.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'rupa', name: 'Rupavahini', logo: '🏛️', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://edge2-moblive.yuppcdn.net/transsd/smil:sirtv09.smil/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://edge3-moblive.yuppcdn.net/transhd2/smil:detv04.smil/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'swarna', name: 'Swarnavahini', logo: '💎', url: 'https://edge1-moblive.yuppcdn.net/drm/smil:swarnawahinidrm.smil/manifest.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'http://61.245.163.69:1935/live/hiru.stream/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'supreme', name: 'Supreme TV', logo: '🏆', url: 'http://112.134.144.172:80/live/supreme/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'tnl', name: 'TNL TV', logo: '📡', url: 'http://61.245.163.69:1935/live/tnl.stream/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'English' },
@@ -107,13 +108,16 @@ function parseM3U(text: string, defaultCategory: string): Channel[] {
 
 // --- CONFIG & UTILS ---
 const CORS_PROXIES = [
-    'DIRECT',
     '/api/proxy?url=',
+    'DIRECT',
     'https://api.allorigins.win/raw?url=',
     'https://api.codetabs.com/v1/proxy?quest=',
     'https://corsproxy.io/?'
 ];
-const CORS_PROXY = CORS_PROXIES[0]; // Default to allorigins (most reliable for direct streams)
+const GET_PROXY_URL = (proxy: string, source: string) => {
+    if (proxy === 'DIRECT') return source;
+    return `${proxy}${encodeURIComponent(source)}`;
+};
 
 // ============================
 // MAIN APP COMPONENT
@@ -146,7 +150,7 @@ export default function ShazanTVApp() {
     const heartbeatRef = useRef<any>(null);
 
     const addLog = useCallback((msg: string) => {
-        setLogs((prev: string[]) => [msg, ...prev].slice(0, 15));
+        setLogs((prev: string[]) => [msg, ...prev].slice(0, 20));
         console.log('[ShazanTV]', msg);
     }, []);
 
@@ -158,7 +162,8 @@ export default function ShazanTVApp() {
         setLoadingPlaylist(playlist.id);
         setStatus(`Loading ${playlist.name}...`);
         try {
-            const res = await fetch(`${CORS_PROXY}${encodeURIComponent(playlist.url)}`);
+            const proxyUrl = GET_PROXY_URL(CORS_PROXIES[0], playlist.url);
+            const res = await fetch(proxyUrl);
             if (!res.ok) throw new Error('Failed');
             const text = await res.text();
             const parsed = parseM3U(text, playlist.category);
@@ -194,7 +199,8 @@ export default function ShazanTVApp() {
                 setCustomM3uLoading(false);
                 return;
             }
-            const res = await fetch(`${CORS_PROXY}${encodeURIComponent(customM3uUrl.trim())}`);
+            const proxyUrl = GET_PROXY_URL(CORS_PROXIES[0], customM3uUrl.trim());
+            const res = await fetch(proxyUrl);
             if (!res.ok) throw new Error('Failed to fetch');
             const text = await res.text();
             const parsed = parseM3U(text, 'Custom');
@@ -235,22 +241,20 @@ export default function ShazanTVApp() {
             navigator.mediaSession.setActionHandler('pause', () => video.pause());
         }
 
-        const isProxyNeeded = source.includes('iptv-org') || source.includes('github') || !source.startsWith('https') || source.includes('yuppcdn') || source.includes('itn.lk');
+        const isProxyNeeded = source.includes('iptv-org') || source.includes('github') || !source.startsWith('https') || source.includes('yuppcdn') || source.includes('akamaized.net') || source.includes('dialog.lk');
 
-        // Strategy: Properly handle DIRECT vs LOCAL CLOUD vs PUBLIC PROXY
-        let finalUrl = source;
-        const currentProxy = CORS_PROXIES[activeProxyIndex % CORS_PROXIES.length];
-
-        if (currentProxy === 'DIRECT') {
-            finalUrl = source;
-        } else if (currentProxy === '/api/proxy?url=') {
-            finalUrl = `/api/proxy?url=${encodeURIComponent(source)}`;
-            addLog('Mode: LOCAL CLOUD PROXY (Most Stable)');
-        } else {
-            finalUrl = `${currentProxy}${encodeURIComponent(source)}`;
+        let proxyToUse = CORS_PROXIES[activeProxyIndex % CORS_PROXIES.length];
+        if (isProxyNeeded && proxyToUse === 'DIRECT' && proxyRetryRef.current === 0) {
+            proxyToUse = CORS_PROXIES[0]; // Auto-force Local Proxy for SL/Restricted Links
         }
 
-        addLog(`Route: ${currentProxy === 'DIRECT' ? 'ISP/Direct' : 'Filtered Node'}`);
+        let finalUrl = GET_PROXY_URL(proxyToUse, source);
+
+        if (proxyToUse === '/api/proxy?url=') {
+            addLog('Mode: LOCAL CLOUD PROXY (High Compatibility)');
+        }
+
+        addLog(`Route: ${proxyToUse === 'DIRECT' ? 'ISP/Direct' : 'Filtered Node'}`);
 
         const tryAlternative = () => {
             const nextIndex = (activeProxyIndex + 1) % CORS_PROXIES.length;
