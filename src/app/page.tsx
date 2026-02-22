@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-    Play, Tv, Settings, Zap, Wifi, WifiOff, Search, Maximize,
-    Lock, Unlock, Activity, Layers, Globe, RefreshCw, Filter,
-    ChevronDown, List, Radio
+    Tv, Search, Radio, Wifi, WifiOff, Maximize, Play, Pause, Lock, Unlock,
+    ChevronRight, ChevronLeft, Volume2, VolumeX, Settings, Send, Info, Zap, RefreshCw, Layers, Server,
+    Globe, Activity, Filter, ChevronDown, List, ChevronUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Hls from 'hls.js';
@@ -43,12 +43,12 @@ const BUILTIN_CHANNELS: Channel[] = [
     // SL Channels
     { id: 'itn', name: 'ITN Sri Lanka', logo: '📺', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'rupa', name: 'Rupavahini', logo: '🏛️', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://edge2-moblive.yuppcdn.net/transsd/smil:sirtv09.smil/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://edge3-moblive.yuppcdn.net/transhd2/smil:detv04.smil/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'https://sl-iptv.top/hiru/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'match1', name: 'LIVE MATCH 1', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
     { id: 'match2', name: 'LIVE MATCH 2', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
-    { id: 'supreme', name: 'Supreme TV', logo: '🏆', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'supreme', name: 'Supreme TV', logo: '🏆', url: 'http://112.134.144.172:80/live/supreme/index.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'match3', name: 'Match Stream 3', logo: '⚽', url: 'http://61.245.163.69:1935/live/sirasa.stream/playlist.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
     { id: 'match4', name: 'Match Stream 4', logo: '🏀', url: 'http://61.245.163.69:1935/live/islandsports.stream/playlist.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
     { id: 'match5', name: 'Match Stream 5', logo: '🎾', url: 'http://112.134.144.172:80/live/supreme/index.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'Sinhala' },
@@ -124,6 +124,7 @@ export default function ShazanTVApp() {
     const [activeHost, setActiveHost] = useState(FREE_HOSTS[0]);
     const [activeCategory, setActiveCategory] = useState('All');
     const [isSpoofingActive, setIsSpoofingActive] = useState(false);
+    const [activeProxyIndex, setActiveProxyIndex] = useState(0);
     const [status, setStatus] = useState('Ready — 5 Channels Loaded');
     const [searchQuery, setSearchQuery] = useState('');
     const [isLocked, setIsLocked] = useState(false);
@@ -224,18 +225,15 @@ export default function ShazanTVApp() {
 
         const isProxyNeeded = source.includes('iptv-org') || source.includes('github') || !source.startsWith('https');
 
-        // Strategy: 1. Spoofing Proxy, 2. Direct, 3. CORS Proxy
+        // Strategy: 1. Selected Proxy, 2. Direct
         let finalUrl = source;
-        if (isSpoofingActive && activeHost.id !== 'direct') {
-            // If the user selects a free host, we proxy and trick the ISP
-            if (activeHost.id === 'dtv' || activeHost.id === 'viu' || activeHost.id === 'pivp' || activeHost.id === 'whatsapp' || activeHost.id === 'match') {
-                // We use the proxy that maps the host
-                finalUrl = `${CORS_PROXY}${encodeURIComponent(source)}&host=${activeHost.host}`;
-            } else {
-                finalUrl = `${CORS_PROXY}${encodeURIComponent(source)}`;
-            }
+        const currentProxy = CORS_PROXIES[activeProxyIndex];
+
+        if (isSpoofingActive) {
+            finalUrl = `${currentProxy}${encodeURIComponent(source)}`;
+            console.log('Using Spoofing Proxy:', finalUrl);
         } else if (isProxyNeeded) {
-            finalUrl = `${CORS_PROXY}${encodeURIComponent(source)}`;
+            finalUrl = `${currentProxy}${encodeURIComponent(source)}`;
             console.log('Using CORS Proxy:', finalUrl);
         }
 
@@ -313,7 +311,7 @@ export default function ShazanTVApp() {
                 .then(() => { setIsPlaying(true); setStatus('🔴 Live — ' + channel.name); })
                 .catch(() => { setShowPlayOverlay(true); setStatus('Ready — Tap to Play'); });
         }
-    }, [isSpoofingActive, activeHost]);
+    }, [isSpoofingActive, activeHost, activeProxyIndex]);
 
     useEffect(() => {
         if (selectedChannel) {
@@ -321,7 +319,7 @@ export default function ShazanTVApp() {
             if (scrollRef.current) scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
         }
         return () => { if (hlsRef.current) hlsRef.current.destroy(); };
-    }, [selectedChannel, activeHost, isSpoofingActive, initializePlayer]);
+    }, [selectedChannel, activeHost, isSpoofingActive, activeProxyIndex, initializePlayer]);
 
     // Handle Rotation & Fullscreen Orientation
     useEffect(() => {
@@ -570,14 +568,23 @@ export default function ShazanTVApp() {
                             <div className={`w-1.5 h-1.5 rounded-full ${isPlaying ? 'bg-green-500 animate-pulse' : 'bg-gray-600'}`} />
                             <span className="text-[9px] text-gray-400 font-bold truncate max-w-[200px]">{status}</span>
                         </div>
-                        <button
-                            onClick={() => setIsSpoofingActive(!isSpoofingActive)}
-                            className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-black border transition-all ${isSpoofingActive ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-white/5 border-white/10 text-gray-500'
-                                }`}
-                        >
-                            {isSpoofingActive ? <Wifi size={9} /> : <WifiOff size={9} />}
-                            {isSpoofingActive ? 'BYPASS ON' : 'DIRECT'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setActiveProxyIndex((prev: number) => (prev + 1) % CORS_PROXIES.length)}
+                                className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-black border bg-white/5 border-white/10 text-blue-400 focus:bg-blue-500/20"
+                                title="Change Proxy Server"
+                            >
+                                <Server size={9} /> Proxy {activeProxyIndex + 1}
+                            </button>
+                            <button
+                                onClick={() => setIsSpoofingActive(!isSpoofingActive)}
+                                className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-black border transition-all ${isSpoofingActive ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-white/5 border-white/10 text-gray-500'
+                                    }`}
+                            >
+                                {isSpoofingActive ? <Wifi size={9} /> : <WifiOff size={9} />}
+                                {isSpoofingActive ? 'BYPASS ON' : 'DIRECT'}
+                            </button>
+                        </div>
                     </div>
                 </section>
 
