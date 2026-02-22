@@ -49,8 +49,7 @@ const BUILTIN_CHANNELS: Channel[] = [
     { id: 'supreme', name: 'Supreme TV', logo: '🏆', url: 'http://112.134.144.172:80/live/supreme/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'tnl', name: 'TNL TV', logo: '📡', url: 'http://61.245.163.69:1935/live/tnl.stream/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'English' },
     { id: 'islandsports', name: 'Island Sports', logo: '🏀', url: 'http://61.245.163.69:1935/live/islandsports.stream/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'match1', name: 'LIVE MATCH 1', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
-    { id: 'match2', name: 'LIVE MATCH 2', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
+    { id: 'test_hls', name: 'HLS Test (Mux)', logo: '🛠️', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Entertainment', country: 'Global', language: 'English' },
 ];
 
 // --- IPTV-ORG PLAYLISTS (10,000+ free world channels) ---
@@ -109,10 +108,10 @@ function parseM3U(text: string, defaultCategory: string): Channel[] {
 // --- CONFIG & UTILS ---
 const CORS_PROXIES = [
     'DIRECT',
+    '/api/proxy?url=',
     'https://api.allorigins.win/raw?url=',
     'https://api.codetabs.com/v1/proxy?quest=',
-    'https://corsproxy.io/?',
-    'https://thingproxy.freeboard.io/fetch/',
+    'https://corsproxy.io/?'
 ];
 const CORS_PROXY = CORS_PROXIES[0]; // Default to allorigins (most reliable for direct streams)
 
@@ -151,11 +150,10 @@ export default function ShazanTVApp() {
         console.log('[ShazanTV]', msg);
     }, []);
 
-    // Unique categories from loaded channels
-    const CATEGORIES = ['All', ...Array.from(new Set(allChannels.map((c: Channel) => c.category))).sort()];
+    const CATEGORIES = ['All', ...Array.from(new Set(allChannels.map((c: any) => c.category))).sort()];
 
     // --- LOAD IPTV-ORG PLAYLIST ---
-    const loadPlaylist = useCallback(async (playlist: typeof IPTV_PLAYLISTS[0]) => {
+    const loadPlaylist = useCallback(async (playlist: any) => {
         if (loadedPlaylists.has(playlist.id)) return;
         setLoadingPlaylist(playlist.id);
         setStatus(`Loading ${playlist.name}...`);
@@ -164,12 +162,16 @@ export default function ShazanTVApp() {
             if (!res.ok) throw new Error('Failed');
             const text = await res.text();
             const parsed = parseM3U(text, playlist.category);
-            setAllChannels(prev => {
-                const existingUrls = new Set(prev.map(c => c.url));
-                const unique = parsed.filter(c => !existingUrls.has(c.url));
+            setAllChannels((prev: any[]) => {
+                const existingUrls = new Set(prev.map((c: any) => c.url));
+                const unique = parsed.filter((c: any) => !existingUrls.has(c.url));
                 return [...prev, ...unique];
             });
-            setLoadedPlaylists((prev: Set<string>) => new Set([...prev, playlist.id]));
+            setLoadedPlaylists((prev: Set<string>) => {
+                const next = new Set(Array.from(prev));
+                next.add(playlist.id);
+                return next;
+            });
             setActiveCategory(playlist.category);
             setStatus(`✅ ${playlist.name} loaded — ${parsed.length} channels`);
             if (scrollRef.current) scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
@@ -235,33 +237,37 @@ export default function ShazanTVApp() {
 
         const isProxyNeeded = source.includes('iptv-org') || source.includes('github') || !source.startsWith('https') || source.includes('yuppcdn') || source.includes('itn.lk');
 
-        // Strategy: Properly handle DIRECT vs PROXY
+        // Strategy: Properly handle DIRECT vs LOCAL CLOUD vs PUBLIC PROXY
         let finalUrl = source;
-        const currentProxyIndex = activeProxyIndex % CORS_PROXIES.length;
-        const currentProxy = CORS_PROXIES[currentProxyIndex];
+        const currentProxy = CORS_PROXIES[activeProxyIndex % CORS_PROXIES.length];
 
         if (currentProxy === 'DIRECT') {
             finalUrl = source;
+        } else if (currentProxy === '/api/proxy?url=') {
+            finalUrl = `/api/proxy?url=${encodeURIComponent(source)}`;
+            addLog('Mode: LOCAL CLOUD PROXY (Most Stable)');
         } else {
             finalUrl = `${currentProxy}${encodeURIComponent(source)}`;
         }
 
-        addLog(`Route: ${currentProxy === 'DIRECT' ? 'Direct/ISP' : 'Proxy Cluster'}`);
+        addLog(`Route: ${currentProxy === 'DIRECT' ? 'ISP/Direct' : 'Filtered Node'}`);
 
         const tryAlternative = () => {
             const nextIndex = (activeProxyIndex + 1) % CORS_PROXIES.length;
             proxyRetryRef.current += 1;
 
-            if (proxyRetryRef.current >= CORS_PROXIES.length * 2) {
-                setStatus('❌ Source Down — Resetting...');
-                addLog('CRITICAL: All routes failed. Retrying Direct.');
+            if (proxyRetryRef.current >= CORS_PROXIES.length * 3) {
+                setStatus('❌ Source Down — Try Another');
+                addLog('CRITICAL: Exhausted all routes.');
                 proxyRetryRef.current = 0;
                 setActiveProxyIndex(0);
                 return;
             }
 
-            const proxyLabel = CORS_PROXIES[nextIndex] === 'DIRECT' ? 'Direct Connection' : `Proxy Node ${nextIndex}`;
-            const msg = `Switching: ${proxyLabel}...`;
+            const proxyLabel = CORS_PROXIES[nextIndex] === 'DIRECT' ? 'Direct Connection' :
+                CORS_PROXIES[nextIndex] === '/api/proxy?url=' ? 'Cloud Proxy (Stable)' :
+                    `Public Proxy ${nextIndex}`;
+            const msg = `Repairing: trying ${proxyLabel}...`;
             setStatus(`🔄 ${msg}`);
             addLog(msg);
             setActiveProxyIndex(nextIndex);
