@@ -41,7 +41,7 @@ const BUILTIN_CHANNELS: Channel[] = [
     { id: 'test1', name: 'HD Test Stream', logo: '📽️', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Entertainment', country: 'Global', language: 'English' },
     { id: 'citytv', name: 'Citytv Canada', logo: '🏙️', url: 'https://citytv.com/live', category: 'Entertainment', country: 'Canada', language: 'English' },
     // SL Channels
-    { id: 'itn', name: 'ITN Sri Lanka', logo: '📺', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'itn', name: 'ITN Sri Lanka', logo: '📺', url: 'https://222103-hls.akamaized.net/668828a00bf80aa436254876/live_aabd3d003af211efadcf7986aa245789/rewind-3600.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'rupa', name: 'Rupavahini', logo: '🏛️', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://edge2-moblive.yuppcdn.net/transsd/smil:sirtv09.smil/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://edge3-moblive.yuppcdn.net/transhd2/smil:detv04.smil/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
@@ -138,12 +138,18 @@ export default function ShazanTVApp() {
     const [customM3uUrl, setCustomM3uUrl] = useState('');
     const [customM3uLoading, setCustomM3uLoading] = useState(false);
 
+    const [logs, setLogs] = useState<string[]>(['System Ready.']);
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const hlsRef = useRef<Hls | null>(null);
     const proxyRetryRef = useRef<number>(0);
     const heartbeatRef = useRef<any>(null);
+
+    const addLog = useCallback((msg: string) => {
+        setLogs(prev => [msg, ...prev].slice(0, 10));
+        console.log('[ShazanTV]', msg);
+    }, []);
 
     // Unique categories from loaded channels
     const CATEGORIES = ['All', ...Array.from(new Set(allChannels.map((c: Channel) => c.category))).sort()];
@@ -211,6 +217,7 @@ export default function ShazanTVApp() {
         const video = videoRef.current;
         const source = channel.url;
 
+        addLog(`Connecting to: ${channel.name}...`);
         setStatus('Connecting...');
         setShowPlayOverlay(false);
         setIsPlaying(false);
@@ -244,12 +251,15 @@ export default function ShazanTVApp() {
         const tryAlternative = () => {
             if (proxyRetryRef.current >= CORS_PROXIES.length) {
                 setStatus('❌ All Proxies Failed — Source Down');
+                addLog('CRITICAL: All proxies exhausted.');
                 proxyRetryRef.current = 0;
                 return;
             }
             proxyRetryRef.current += 1;
             const nextIndex = (activeProxyIndex + 1) % CORS_PROXIES.length;
-            setStatus(`🔄 Routing via Proxy ${proxyRetryRef.current + 1}/${CORS_PROXIES.length}...`);
+            const msg = `Routing via Proxy ${proxyRetryRef.current + 1}/${CORS_PROXIES.length}...`;
+            setStatus(`🔄 ${msg}`);
+            addLog(msg);
             setActiveProxyIndex(nextIndex);
         };
 
@@ -257,7 +267,7 @@ export default function ShazanTVApp() {
             if (heartbeatRef.current) clearTimeout(heartbeatRef.current);
             heartbeatRef.current = setTimeout(() => {
                 if (status.includes('Loading') || status.includes('Connecting')) {
-                    console.log('Heartbeat: Still loading, rotating proxy');
+                    addLog('Heartbeat: Load timeout, switching proxy.');
                     tryAlternative();
                 }
             }, 12000);
@@ -278,8 +288,16 @@ export default function ShazanTVApp() {
                 manifestLoadingMaxRetry: 15,
                 levelLoadingMaxRetry: 15,
                 manifestLoadingTimeOut: 20000,
-                xhrSetup: (xhr: XMLHttpRequest) => {
+                xhrSetup: (xhr: XMLHttpRequest, url: string) => {
                     xhr.withCredentials = false;
+                    // Advanced Dialog Spoofing Headers
+                    if (isSpoofingActive && activeHost.host !== 'direct') {
+                        xhr.setRequestHeader('X-Online-Host', activeHost.host);
+                        xhr.setRequestHeader('X-Forwarded-Host', activeHost.host);
+                        xhr.setRequestHeader('X-Config-Host', activeHost.host);
+                    }
+                    // Optional: Custom User Agent for some proxies
+                    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
                 }
             });
 
@@ -288,6 +306,7 @@ export default function ShazanTVApp() {
             hls.attachMedia(video);
 
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                addLog('Stream Matched!');
                 proxyRetryRef.current = 0;
                 if (heartbeatRef.current) clearTimeout(heartbeatRef.current);
                 const playPromise = video.play();
@@ -305,7 +324,7 @@ export default function ShazanTVApp() {
                 if (data.fatal) {
                     switch (data.type) {
                         case Hls.ErrorTypes.NETWORK_ERROR:
-                            console.error('HLS Network Error:', data);
+                            addLog(`Network Error: ${data.details} (${data.response?.code || 'No Code'})`);
                             if (data.details === 'manifestLoadError' || data.details === 'levelLoadError' || data.response?.code === 0) {
                                 tryAlternative();
                             } else {
@@ -313,12 +332,12 @@ export default function ShazanTVApp() {
                             }
                             break;
                         case Hls.ErrorTypes.MEDIA_ERROR:
-                            console.error('HLS Media Error:', data);
+                            addLog('Media Error: Recovering...');
                             setStatus('⚠️ Media Error - Recovering...');
                             hls.recoverMediaError();
                             break;
                         default:
-                            console.error('HLS Fatal Error:', data);
+                            addLog('Fatal Error: Rotating.');
                             tryAlternative();
                             break;
                     }
@@ -606,6 +625,21 @@ export default function ShazanTVApp() {
                                 {isSpoofingActive ? <Wifi size={9} /> : <WifiOff size={9} />}
                                 {isSpoofingActive ? 'BYPASS ON' : 'DIRECT'}
                             </button>
+                        </div>
+                    </div>
+
+                    {/* Debug Console */}
+                    <div className="mt-3 bg-black/40 rounded-lg p-2 border border-white/5">
+                        <div className="flex items-center justify-between mb-1">
+                            <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Debug Console</span>
+                            <button onClick={() => setLogs([])} className="text-[8px] text-blue-400 hover:text-blue-300 px-1">Clear</button>
+                        </div>
+                        <div className="space-y-0.5 max-h-[60px] overflow-y-auto no-scrollbar">
+                            {logs.map((log, i) => (
+                                <div key={i} className="text-[7px] font-mono text-gray-400 border-l border-white/10 pl-1.5 py-0.5">
+                                    <span className="text-gray-600">[{new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}]</span> {log}
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </section>
