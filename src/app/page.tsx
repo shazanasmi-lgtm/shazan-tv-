@@ -108,11 +108,11 @@ function parseM3U(text: string, defaultCategory: string): Channel[] {
 
 // --- CONFIG & UTILS ---
 const CORS_PROXIES = [
-    'https://api.codetabs.com/v1/proxy?quest=',
-    'https://thingproxy.freeboard.io/fetch/',
+    'DIRECT',
     'https://api.allorigins.win/raw?url=',
+    'https://api.codetabs.com/v1/proxy?quest=',
     'https://corsproxy.io/?',
-    'https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=10000&country=all&ssl=all&anonymity=all&url=',
+    'https://thingproxy.freeboard.io/fetch/',
 ];
 const CORS_PROXY = CORS_PROXIES[0]; // Default to allorigins (most reliable for direct streams)
 
@@ -147,7 +147,7 @@ export default function ShazanTVApp() {
     const heartbeatRef = useRef<any>(null);
 
     const addLog = useCallback((msg: string) => {
-        setLogs(prev => [msg, ...prev].slice(0, 10));
+        setLogs((prev: string[]) => [msg, ...prev].slice(0, 15));
         console.log('[ShazanTV]', msg);
     }, []);
 
@@ -235,31 +235,33 @@ export default function ShazanTVApp() {
 
         const isProxyNeeded = source.includes('iptv-org') || source.includes('github') || !source.startsWith('https') || source.includes('yuppcdn') || source.includes('itn.lk');
 
-        // Strategy: 1. Selected Proxy, 2. Direct
+        // Strategy: Properly handle DIRECT vs PROXY
         let finalUrl = source;
         const currentProxyIndex = activeProxyIndex % CORS_PROXIES.length;
         const currentProxy = CORS_PROXIES[currentProxyIndex];
 
-        if (isSpoofingActive) {
+        if (currentProxy === 'DIRECT') {
+            finalUrl = source;
+        } else {
             finalUrl = `${currentProxy}${encodeURIComponent(source)}`;
-            console.log('Using Spoofing Proxy:', finalUrl);
-        } else if (isProxyNeeded) {
-            finalUrl = `${currentProxy}${encodeURIComponent(source)}`;
-            console.log('Using CORS Proxy:', finalUrl);
         }
 
+        addLog(`Route: ${currentProxy === 'DIRECT' ? 'Direct/ISP' : 'Proxy Cluster'}`);
+
         const tryAlternative = () => {
-            if (proxyRetryRef.current >= CORS_PROXIES.length) {
-                setStatus('❌ Source Error — Restarting...');
-                addLog('CRITICAL: Cycle complete. Resetting.');
-                proxyRetryRef.current = 0;
-                setActiveProxyIndex(0); // Back to DIRECT
-                return;
-            }
             const nextIndex = (activeProxyIndex + 1) % CORS_PROXIES.length;
             proxyRetryRef.current += 1;
-            const proxyName = CORS_PROXIES[nextIndex] === 'DIRECT' ? 'Direct Mode' : `Proxy ${proxyRetryRef.current}/${CORS_PROXIES.length - 1}`;
-            const msg = `Switching to ${proxyName}...`;
+
+            if (proxyRetryRef.current >= CORS_PROXIES.length * 2) {
+                setStatus('❌ Source Down — Resetting...');
+                addLog('CRITICAL: All routes failed. Retrying Direct.');
+                proxyRetryRef.current = 0;
+                setActiveProxyIndex(0);
+                return;
+            }
+
+            const proxyLabel = CORS_PROXIES[nextIndex] === 'DIRECT' ? 'Direct Connection' : `Proxy Node ${nextIndex}`;
+            const msg = `Switching: ${proxyLabel}...`;
             setStatus(`🔄 ${msg}`);
             addLog(msg);
             setActiveProxyIndex(nextIndex);
