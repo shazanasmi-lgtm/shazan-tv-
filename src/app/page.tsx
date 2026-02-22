@@ -24,7 +24,8 @@ interface Channel {
 const FREE_HOSTS = [
     { id: 'direct', name: 'Direct (Normal Data)', host: 'direct', icon: '🌐' },
     { id: 'viu', name: 'Dialog Viu (Zero)', host: 'viu.lk', icon: '📺' },
-    { id: 'pivp', name: 'DTV Proxy', host: 'p.pivp.lk', icon: '⚡' },
+    { id: 'dtv', name: 'DTV Proxy', host: 'dtv.dialog.lk', icon: '⚡' },
+    { id: 'pivp', name: 'Pivp Proxy', host: 'p.pivp.lk', icon: '🚀' },
     { id: 'whatsapp', name: 'WhatsApp Pack', host: 'v.whatsapp.net', icon: '🟢' },
 ];
 
@@ -42,9 +43,9 @@ const BUILTIN_CHANNELS: Channel[] = [
     // SL Channels
     { id: 'itn', name: 'ITN Sri Lanka', logo: '📺', url: 'https://cdn.itn.lk/live/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'rupa', name: 'Rupavahini', logo: '🏛️', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://sirasa.m3u8.stream/live.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://derana.m3u8.stream/live.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'https://hiru.m3u8.stream/live.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://itv-org.github.io/iptv/countries/lk.m3u', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://itv-org.github.io/iptv/countries/lk.m3u', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'https://itv-org.github.io/iptv/countries/lk.m3u', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
 ];
 
 // --- IPTV-ORG PLAYLISTS (10,000+ free world channels) ---
@@ -61,6 +62,7 @@ const IPTV_PLAYLISTS = [
     { id: 'country_in', name: '🇮🇳 India', url: 'https://iptv-org.github.io/iptv/countries/in.m3u', category: 'India' },
     { id: 'country_us', name: '🇺🇸 USA', url: 'https://iptv-org.github.io/iptv/countries/us.m3u', category: 'USA' },
     { id: 'country_uk', name: '🇬🇧 UK', url: 'https://iptv-org.github.io/iptv/countries/gb.m3u', category: 'UK' },
+    { id: 'country_ca', name: '🇨🇦 Canada', url: 'https://iptv-org.github.io/iptv/countries/ca.m3u', category: 'Canada' },
     { id: 'country_jp', name: '🇯🇵 Japan', url: 'https://iptv-org.github.io/iptv/countries/jp.m3u', category: 'Japan' },
     { id: 'country_kr', name: '🇰🇷 Korea', url: 'https://iptv-org.github.io/iptv/countries/kr.m3u', category: 'Korea' },
     { id: 'country_au', name: '🇦🇺 Australia', url: 'https://iptv-org.github.io/iptv/countries/au.m3u', category: 'Australia' },
@@ -88,7 +90,7 @@ function parseM3U(text: string, defaultCategory: string): Channel[] {
                 language: langMatch ? langMatch[1] : '',
                 country: countryMatch ? countryMatch[1] : '',
             };
-        } else if (line.startsWith('http') && current) {
+        } else if (line.length > 5 && !line.startsWith('#') && current) {
             current.url = line;
             current.id = `iptv_${Math.random().toString(36).substr(2, 9)}`;
             if (!current.logo || current.logo === '') current.logo = '📺';
@@ -98,6 +100,8 @@ function parseM3U(text: string, defaultCategory: string): Channel[] {
     }
     return channels;
 }
+
+const CORS_PROXY = 'https://corsproxy.io/?';
 
 // ============================
 // MAIN APP COMPONENT
@@ -119,14 +123,13 @@ export default function ShazanTVApp() {
     const [showPlaylistPanel, setShowPlaylistPanel] = useState(false);
     const [customM3uUrl, setCustomM3uUrl] = useState('');
     const [customM3uLoading, setCustomM3uLoading] = useState(false);
-    const [showSetupGuide, setShowSetupGuide] = useState(false);
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const hlsRef = useRef<Hls | null>(null);
 
     // Unique categories from loaded channels
-    const CATEGORIES = ['All', ...Array.from(new Set(allChannels.map(c => c.category))).sort()];
+    const CATEGORIES = ['All', ...Array.from(new Set(allChannels.map((c: Channel) => c.category))).sort()];
 
     // --- LOAD IPTV-ORG PLAYLIST ---
     const loadPlaylist = useCallback(async (playlist: typeof IPTV_PLAYLISTS[0]) => {
@@ -134,18 +137,19 @@ export default function ShazanTVApp() {
         setLoadingPlaylist(playlist.id);
         setStatus(`Loading ${playlist.name}...`);
         try {
-            const res = await fetch(playlist.url);
+            const res = await fetch(`${CORS_PROXY}${encodeURIComponent(playlist.url)}`);
             if (!res.ok) throw new Error('Failed');
             const text = await res.text();
             const parsed = parseM3U(text, playlist.category);
             setAllChannels(prev => {
-                const existingIds = new Set(prev.map(c => c.url));
-                const unique = parsed.filter(c => !existingIds.has(c.url));
+                const existingUrls = new Set(prev.map(c => c.url));
+                const unique = parsed.filter(c => !existingUrls.has(c.url));
                 return [...prev, ...unique];
             });
-            setLoadedPlaylists(prev => new Set([...prev, playlist.id]));
+            setLoadedPlaylists((prev: Set<string>) => new Set([...prev, playlist.id]));
             setStatus(`✅ ${playlist.name} loaded — ${parsed.length} channels`);
-        } catch {
+        } catch (err: any) {
+            console.error(`Error loading playlist ${playlist.name}:`, err);
             setStatus(`⚠️ Could not load ${playlist.name}`);
         } finally {
             setLoadingPlaylist(null);
@@ -158,19 +162,24 @@ export default function ShazanTVApp() {
         setCustomM3uLoading(true);
         setStatus('Loading custom playlist...');
         try {
-            const res = await fetch(customM3uUrl.trim());
+            if (customM3uUrl.toLowerCase().endsWith('.ehi')) {
+                setStatus('⚠️ EHI files are for HTTP Injector, not for M3U playlists.');
+                setCustomM3uLoading(false);
+                return;
+            }
+            const res = await fetch(`${CORS_PROXY}${encodeURIComponent(customM3uUrl.trim())}`);
             if (!res.ok) throw new Error('Failed to fetch');
             const text = await res.text();
             const parsed = parseM3U(text, 'Custom');
             if (parsed.length === 0) throw new Error('No channels found');
-            setAllChannels(prev => {
+            setAllChannels((prev: Channel[]) => {
                 const existingUrls = new Set(prev.map((c: Channel) => c.url));
                 const unique = parsed.filter((c: Channel) => !existingUrls.has(c.url));
                 return [...prev, ...unique];
             });
             setStatus(`✅ Added ${parsed.length} channels from custom M3U`);
             setCustomM3uUrl('');
-        } catch (err) {
+        } catch (err: any) {
             setStatus('⚠️ Failed to load M3U — check URL or CORS');
         } finally {
             setCustomM3uLoading(false);
@@ -198,23 +207,63 @@ export default function ShazanTVApp() {
             navigator.mediaSession.setActionHandler('pause', () => video.pause());
         }
 
+        const isProxyNeeded = source.includes('iptv-org') || source.includes('github') || !source.startsWith('https');
+
+        let finalUrl = source;
+        if (isSpoofingActive && activeHost.id !== 'direct') {
+            finalUrl = `https://p.pivp.lk/proxy?url=${encodeURIComponent(source)}&host=${activeHost.host}`;
+        } else if (isProxyNeeded) {
+            // Use corsproxy.io as a fallback for known problematic sources
+            finalUrl = `${CORS_PROXY}${encodeURIComponent(source)}`;
+        }
+
         if (hlsRef.current) { hlsRef.current.destroy(); }
 
-        const finalUrl = (isSpoofingActive && activeHost.id !== 'direct')
-            ? `https://p.pivp.lk/proxy?url=${encodeURIComponent(source)}&host=${activeHost.host}`
-            : source;
-
         if (Hls.isSupported()) {
-            const hls = new Hls({ enableWorker: true, lowLatencyMode: true, backBufferLength: 90 });
+            const hls = new Hls({
+                enableWorker: true,
+                lowLatencyMode: true,
+                backBufferLength: 90,
+                maxBufferSize: 30 * 1000 * 1000,
+                maxBufferLength: 30,
+                manifestLoadingMaxRetry: 10,
+                levelLoadingMaxRetry: 10,
+                xhrSetup: (xhr: XMLHttpRequest) => {
+                    xhr.withCredentials = false;
+                }
+            });
+
             hls.loadSource(finalUrl);
             hls.attachMedia(video);
+
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                video.play()
-                    .then(() => { setIsPlaying(true); setStatus('🔴 Live — ' + channel.name); })
-                    .catch(() => { setShowPlayOverlay(true); setStatus('Ready — Tap to Play'); });
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                    playPromise
+                        .then(() => { setIsPlaying(true); setStatus('🔴 Live — ' + channel.name); })
+                        .catch(() => { setShowPlayOverlay(true); setStatus('Ready — Tap to Play'); });
+                }
             });
+
             hls.on(Hls.Events.ERROR, (_: any, data: any) => {
-                if (data.fatal) { setStatus('⚠️ Stream Error — Retrying'); hls.recoverMediaError(); }
+                if (data.fatal) {
+                    switch (data.type) {
+                        case Hls.ErrorTypes.NETWORK_ERROR:
+                            setStatus('⚠️ Network Error — Retrying');
+                            hls.startLoad();
+                            break;
+                        case Hls.ErrorTypes.MEDIA_ERROR:
+                            setStatus('⚠️ Media Error — Recovering');
+                            hls.recoverMediaError();
+                            break;
+                        default:
+                            setStatus('⚠️ Fatal Error — Restarting');
+                            initializePlayer(channel);
+                            break;
+                    }
+                } else {
+                    setStatus('Buffering...');
+                }
             });
             hlsRef.current = hls;
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
@@ -228,7 +277,38 @@ export default function ShazanTVApp() {
     useEffect(() => {
         if (selectedChannel) initializePlayer(selectedChannel);
         return () => { if (hlsRef.current) hlsRef.current.destroy(); };
-    }, [selectedChannel, activeHost, isSpoofingActive]);
+    }, [selectedChannel, activeHost, isSpoofingActive, initializePlayer]);
+
+    // Handle Rotation & Fullscreen Orientation
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            if (document.fullscreenElement && window.screen.orientation) {
+                // If we entered fullscreen and are on mobile, try to lock to landscape
+                if (window.innerWidth < 768) {
+                    window.screen.orientation.lock('landscape').catch(() => {
+                        // Some browsers don't support locking
+                    });
+                }
+            } else if (!document.fullscreenElement && window.screen.orientation) {
+                window.screen.orientation.unlock();
+            }
+        };
+
+        const handleOrientationChange = () => {
+            if (window.screen.orientation.type.startsWith('landscape') && !document.fullscreenElement) {
+                // If user rotates to landscape manually, suggest fullscreen
+                setStatus('Rotate to watch in full screen');
+            }
+        };
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        window.screen.orientation?.addEventListener('change', handleOrientationChange);
+
+        return () => {
+            document.removeEventListener('fullscreenchange', handleFullscreenChange);
+            window.screen.orientation?.removeEventListener('change', handleOrientationChange);
+        };
+    }, []);
 
     const handleManualPlay = () => {
         if (isLocked) { setShowUnlockPrompt(true); setTimeout(() => setShowUnlockPrompt(false), 3000); return; }
@@ -237,11 +317,18 @@ export default function ShazanTVApp() {
 
     const toggleFullScreen = () => {
         if (!containerRef.current) return;
-        if (!document.fullscreenElement) containerRef.current.requestFullscreen().catch(console.error);
-        else document.exitFullscreen();
+        if (!document.fullscreenElement) {
+            containerRef.current.requestFullscreen().then(() => {
+                if (window.screen.orientation && window.innerWidth < 768) {
+                    window.screen.orientation.lock('landscape').catch(() => { });
+                }
+            }).catch(console.error);
+        } else {
+            document.exitFullscreen();
+        }
     };
 
-    const filteredChannels = allChannels.filter(c => {
+    const filteredChannels = allChannels.filter((c: Channel) => {
         const matchSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (c.country || '').toLowerCase().includes(searchQuery.toLowerCase());
         const matchCat = activeCategory === 'All' || c.category === activeCategory;
@@ -353,10 +440,10 @@ export default function ShazanTVApp() {
                                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                             className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/70 backdrop-blur-lg">
                                             <button onClick={(e: React.MouseEvent) => { e.stopPropagation(); setIsLocked(false); }}
-                                                className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center shadow-xl shadow-blue-500/40">
-                                                <Lock size={24} />
+                                                className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center shadow-2xl shadow-blue-500/40 border-4 border-white/20">
+                                                <Lock size={28} />
                                             </button>
-                                            <p className="mt-3 text-[9px] font-black tracking-[0.25em] text-white/80">TAP TO UNLOCK</p>
+                                            <p className="mt-4 text-[10px] font-black tracking-[0.3em] text-white/90 uppercase">TAP TO UNLOCK</p>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
@@ -366,9 +453,21 @@ export default function ShazanTVApp() {
                                     {!isLocked && showPlayOverlay && (
                                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                             className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
-                                            <div className="w-14 h-14 bg-blue-500 rounded-full flex items-center justify-center shadow-xl shadow-blue-500/50">
-                                                <Play size={28} fill="white" className="ml-1" />
+                                            <div className="w-20 h-20 bg-blue-500/90 rounded-full flex items-center justify-center shadow-2xl shadow-blue-500/50 backdrop-blur-sm border-4 border-white/20">
+                                                <Play size={36} fill="white" className="ml-1" />
                                             </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
+                                {/* Rotation Prompt */}
+                                <AnimatePresence>
+                                    {isPlaying && !document.fullscreenElement && window.innerWidth < window.innerHeight && (
+                                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
+                                            className="absolute bottom-16 left-1/2 -translate-x-1/2 bg-blue-600/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 z-30 pointer-events-none">
+                                            <p className="text-[10px] font-black flex items-center gap-2">
+                                                <RefreshCw size={12} className="animate-spin-slow" /> ROTATE FOR FULL SCREEN
+                                            </p>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
@@ -376,9 +475,12 @@ export default function ShazanTVApp() {
                                 {/* Spinner */}
                                 {!isPlaying && !showPlayOverlay && (
                                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                        <div className="flex flex-col items-center gap-3">
-                                            <div className="w-8 h-8 border-2 border-blue-500/20 border-t-blue-400 rounded-full animate-spin" />
-                                            <span className="text-[8px] font-bold text-blue-400 tracking-widest uppercase">Connecting...</span>
+                                        <div className="flex flex-col items-center gap-4">
+                                            <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-400 rounded-full animate-spin" />
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-[10px] font-black text-blue-400 tracking-[0.2em] uppercase">CONNECTING</span>
+                                                <span className="text-[8px] text-gray-500 mt-1 uppercase">Checking Spoofing Nodes...</span>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -447,85 +549,27 @@ export default function ShazanTVApp() {
                 )}
                 {/* DIALOG ZERO DATA HELPER BANNER */}
                 <section className="px-4 mb-4">
-                    <div className="flex items-center justify-between bg-gradient-to-r from-blue-900/30 to-purple-900/20 border border-blue-500/20 rounded-2xl px-4 py-3">
-                        <div>
-                            <p className="text-[10px] font-black text-blue-300 uppercase tracking-widest">Dialog Zero Data</p>
-                            <p className="text-[8px] text-gray-400 mt-0.5">HTTP Injector manual setup guide</p>
+                    <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/20 border border-blue-500/20 rounded-2xl p-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <div>
+                                <p className="text-[10px] font-black text-blue-300 uppercase tracking-widest">Dialog Zero Data</p>
+                                <p className="text-[8px] text-gray-400 mt-0.5">Free watch via Dialog Zero Pack</p>
+                            </div>
+                            <a
+                                href="/shazan-tv.ehi"
+                                download="shazan-tv.ehi"
+                                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 rounded-xl text-[9px] font-black text-white shadow-lg shadow-blue-600/30 hover:bg-blue-500 transition-colors"
+                            >
+                                ⬇️ Download EHI
+                            </a>
                         </div>
-                        <button
-                            onClick={() => setShowSetupGuide(true)}
-                            className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 rounded-xl text-[9px] font-black text-white shadow-lg shadow-blue-600/30 hover:bg-blue-500 transition-colors"
-                        >
-                            📋 View Setup
-                        </button>
+                        <div className="bg-black/40 rounded-lg p-2 border border-white/5">
+                            <p className="text-[7px] text-gray-500 leading-relaxed italic">
+                                💡 <strong>How to use:</strong> Download the .ehi file, import it into the <strong>HTTP Injector</strong> app on your Android phone, connect it, and then refresh this page to watch TV without using your main data.
+                            </p>
+                        </div>
                     </div>
                 </section>
-
-                {/* SETUP GUIDE MODAL */}
-                <AnimatePresence>
-                    {showSetupGuide && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-[100] flex items-end justify-center bg-black/80 backdrop-blur-sm"
-                            onClick={() => setShowSetupGuide(false)}
-                        >
-                            <motion.div
-                                initial={{ y: 100 }}
-                                animate={{ y: 0 }}
-                                exit={{ y: 100 }}
-                                className="w-full max-w-md bg-[#0f0f1a] border border-white/10 rounded-t-3xl p-6 pb-10"
-                                onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                            >
-                                <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-5" />
-                                <h2 className="text-sm font-black text-white mb-1">📱 HTTP Injector Setup</h2>
-                                <p className="text-[9px] text-blue-400 font-bold uppercase tracking-widest mb-5">Dialog Zero Data — Free TV Streaming</p>
-
-                                <div className="space-y-3">
-                                    {[
-                                        { step: '1', title: 'Install App', desc: 'Play Store → Search "HTTP Injector" → Install (by Evozi)' },
-                                        { step: '2', title: 'Open HTTP Injector', desc: 'Open the app → Tap menu (≡) top left' },
-                                        { step: '3', title: 'SSH/Payload Settings', desc: 'Go to "Payload" tab → clear existing → paste below:' },
-                                        { step: '4', title: 'Enter Real Host', desc: 'Real Host field → type exactly: viu.lk' },
-                                        { step: '5', title: 'Connect & Open TV', desc: 'Tap big START button → wait for 🔑 key icon → open Shazan TV' },
-                                    ].map(item => (
-                                        <div key={item.step} className="flex gap-3 items-start">
-                                            <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 text-[9px] font-black">{item.step}</div>
-                                            <div>
-                                                <p className="text-[10px] font-black text-white">{item.title}</p>
-                                                <p className="text-[9px] text-gray-400 mt-0.5">{item.desc}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                {/* Config values */}
-                                <div className="mt-5 bg-black/40 rounded-2xl p-4 border border-white/5">
-                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3">Config Values</p>
-                                    {[
-                                        { label: 'Real Host', value: 'viu.lk' },
-                                        { label: 'Port', value: '8080' },
-                                        { label: 'Payload', value: 'GET / HTTP/1.1[crlf]Host: viu.lk[crlf][crlf]' },
-                                        { label: 'DNS', value: '8.8.8.8' },
-                                    ].map(row => (
-                                        <div key={row.label} className="flex justify-between items-center py-1.5 border-b border-white/5 last:border-0">
-                                            <span className="text-[9px] text-gray-500 font-bold">{row.label}</span>
-                                            <span className="text-[9px] text-blue-300 font-mono bg-blue-950/40 px-2 py-0.5 rounded-lg">{row.value}</span>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <button
-                                    onClick={() => setShowSetupGuide(false)}
-                                    className="w-full mt-5 py-3 bg-blue-600 rounded-2xl text-xs font-black text-white shadow-lg shadow-blue-600/30"
-                                >
-                                    Got It ✓
-                                </button>
-                            </motion.div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
 
                 <section className="px-4 mb-3">
                     <div className="relative">
