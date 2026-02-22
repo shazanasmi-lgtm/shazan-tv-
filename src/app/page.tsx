@@ -43,12 +43,12 @@ const BUILTIN_CHANNELS: Channel[] = [
     // SL Channels
     { id: 'itn', name: 'ITN Sri Lanka', logo: '📺', url: 'https://live.itn.lk/itn/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'rupa', name: 'Rupavahini', logo: '🏛️', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://live.itn.lk/sirasa/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://live.itn.lk/derana/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'https://live.itn.lk/hiru/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://edge2-moblive.yuppcdn.net/transsd/smil:sirtv09.smil/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://edge3-moblive.yuppcdn.net/transhd2/smil:detv04.smil/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
+    { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'http://61.245.163.69:1935/live/hiru.stream/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'supreme', name: 'Supreme TV', logo: '🏆', url: 'http://112.134.144.172:80/live/supreme/index.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
-    { id: 'islandsports', name: 'Island Sports', logo: '🏀', url: 'http://61.245.163.69:1935/live/islandsports.stream/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'tnl', name: 'TNL TV', logo: '📡', url: 'http://61.245.163.69:1935/live/tnl.stream/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'English' },
+    { id: 'islandsports', name: 'Island Sports', logo: '🏀', url: 'http://61.245.163.69:1935/live/islandsports.stream/playlist.m3u8', category: 'SL TV', country: 'Sri Lanka', language: 'Sinhala' },
     { id: 'match1', name: 'LIVE MATCH 1', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
     { id: 'match2', name: 'LIVE MATCH 2', logo: '🏏', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'CRICKET', country: 'Sri Lanka', language: 'English' },
 ];
@@ -250,14 +250,16 @@ export default function ShazanTVApp() {
 
         const tryAlternative = () => {
             if (proxyRetryRef.current >= CORS_PROXIES.length) {
-                setStatus('❌ Source Down — Try Direct Mode');
-                addLog('CRITICAL: All proxies failed.');
+                setStatus('❌ Source Error — Restarting...');
+                addLog('CRITICAL: Cycle complete. Resetting.');
                 proxyRetryRef.current = 0;
+                setActiveProxyIndex(0); // Back to DIRECT
                 return;
             }
             const nextIndex = (activeProxyIndex + 1) % CORS_PROXIES.length;
             proxyRetryRef.current += 1;
-            const msg = `Switching Proxy ${proxyRetryRef.current}/${CORS_PROXIES.length}...`;
+            const proxyName = CORS_PROXIES[nextIndex] === 'DIRECT' ? 'Direct Mode' : `Proxy ${proxyRetryRef.current}/${CORS_PROXIES.length - 1}`;
+            const msg = `Switching to ${proxyName}...`;
             setStatus(`🔄 ${msg}`);
             addLog(msg);
             setActiveProxyIndex(nextIndex);
@@ -629,21 +631,27 @@ export default function ShazanTVApp() {
                     </div>
 
                     {/* Debug Console */}
-                    <div className="mt-3 bg-black/40 rounded-lg p-2 border border-white/5">
-                        <div className="flex items-center justify-between mb-1">
-                            <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Debug Console</span>
+                    <div className="mt-3 bg-black/40 rounded-lg p-3 border border-white/5 space-y-2">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Diagnostic Logs</span>
                             <div className="flex gap-2">
-                                <button onClick={() => { proxyRetryRef.current = 0; initializePlayer(selectedChannel!); }} className="text-[8px] text-green-400 hover:text-green-300 font-bold px-1 uppercase">Retry</button>
-                                <button onClick={() => setLogs([])} className="text-[8px] text-gray-400 hover:text-white px-1">Clear</button>
+                                <button onClick={() => { proxyRetryRef.current = 0; setActiveProxyIndex(0); initializePlayer(selectedChannel!); }} className="text-[9px] text-green-400 hover:text-green-300 font-bold px-2 py-0.5 bg-green-400/10 rounded uppercase">Re-Check</button>
+                                <button onClick={() => setLogs([])} className="text-[9px] text-gray-400 hover:text-white px-2 py-0.5 bg-white/5 rounded">Clear</button>
                             </div>
                         </div>
-                        <div className="space-y-0.5 max-h-[80px] overflow-y-auto no-scrollbar font-mono text-[7px]">
+                        <div className="space-y-1 max-h-[100px] overflow-y-auto no-scrollbar font-mono text-[8px]">
                             {logs.map((log, i) => (
-                                <div key={i} className={`pl-1.5 py-0.5 border-l ${log.includes('CRITICAL') ? 'text-red-400 border-red-500' : log.includes('Matched') ? 'text-green-400 border-green-500' : 'text-gray-400 border-white/10'}`}>
-                                    <span className="text-gray-600">[{new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}]</span> {log}
+                                <div key={i} className={`pl-2 py-1 border-l-2 ${log.includes('CRITICAL') ? 'text-red-400 border-red-500 bg-red-500/5' : log.includes('Matched') ? 'text-green-400 border-green-500 bg-green-500/5' : 'text-gray-400 border-white/10'}`}>
+                                    <span className="text-gray-600 opacity-50">{new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span> {log}
                                 </div>
                             ))}
                         </div>
+                        {proxyRetryRef.current > 0 && (
+                            <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[8px]">
+                                <span className="text-gray-500 italic">Current Route: {CORS_PROXIES[activeProxyIndex] === 'DIRECT' ? 'Direct Connection' : 'Filtered Proxy Cluster'}</span>
+                                <span className="text-blue-400 font-bold uppercase">Retry {proxyRetryRef.current}/{CORS_PROXIES.length - 1}</span>
+                            </div>
+                        )}
                     </div>
                 </section>
 
