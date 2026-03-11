@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// THE ONLY HOST - Hardcoded to Dialog Viu for maximum reliability
+const DIALOG_FREE_HOST = 'viu.lk';
+
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const url = searchParams.get('url');
 
     if (!url) {
-        return new NextResponse('Missing URL parameter', { status: 400 });
+        return new NextResponse('Missing URL', { status: 400 });
     }
 
     const requestOrigin = new URL(request.url).origin;
@@ -14,52 +17,62 @@ export async function GET(request: NextRequest) {
 
     try {
         const targetUrl = new URL(url);
+
+        // STRICTOR HEADERS - Mimicking official Dialog Viu App explicitly
+        const fetchHeaders: Record<string, string> = {
+            'User-Agent': 'Viu/1.0.0 (Android 12; Mobile)',
+            'Accept': '*/*',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Referer': `https://${DIALOG_FREE_HOST}/`,
+            'Origin': `https://${DIALOG_FREE_HOST}`,
+            'X-Requested-With': 'com.dialog.viu',
+            'X-Online-Host': DIALOG_FREE_HOST,
+            'X-Forwarded-Host': DIALOG_FREE_HOST,
+            'Host-Override': DIALOG_FREE_HOST,
+            'Proxy-Connection': 'keep-alive',
+            'Connection': 'keep-alive',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+        };
+
         const response = await fetch(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36',
-                'Accept': '*/*',
-                'Referer': targetUrl.origin + '/',
-                'Origin': targetUrl.origin,
-                'Sec-Fetch-Mode': 'cors',
-                'Sec-Fetch-Site': 'cross-site',
-                // Forward spoofing headers if present
-                ...(request.headers.get('x-online-host') ? { 'X-Online-Host': request.headers.get('x-online-host') || '' } : {}),
-                ...(request.headers.get('x-forwarded-host') ? { 'X-Forwarded-Host': request.headers.get('x-forwarded-host') || '' } : {}),
-            },
-            next: { revalidate: 0 } // Disable cache for live streams
+            headers: fetchHeaders,
+            next: { revalidate: 0 },
+            redirect: 'follow'
         });
 
         if (!response.ok) {
-            return new NextResponse(`Target Error: ${response.status}`, { status: response.status });
+            return new NextResponse(`Stream Error Area: ${response.status}`, { status: response.status });
         }
 
         const contentType = response.headers.get('content-type') || '';
 
-        // Smarter M3U8 detection
-        const isLikelyM3U8 = contentType.includes('mpegurl') ||
+        // Handle Playlists (.m3u8, .m3u)
+        const isPlaylist =
+            contentType.includes('mpegurl') ||
             contentType.includes('application/x-mpegURL') ||
             url.includes('.m3u8') ||
+            url.includes('.m3u') ||
             contentType.includes('text/plain');
 
-        if (isLikelyM3U8) {
+        if (isPlaylist) {
             let text = await response.text();
 
-            // Verify and clean
             if (!text.startsWith('#EXTM3U') && !contentType.includes('mpegurl')) {
-                // Not a real manifest or a weird data stream
                 return new NextResponse(Buffer.from(text), {
                     headers: { 'Content-Type': contentType, 'Access-Control-Allow-Origin': '*' }
                 });
             }
 
+            // REWRITE ALL URLs TO GO THROUGH PROXY
             const lines = text.split('\n');
             const rewrittenLines = lines.map(line => {
                 const trimmed = line.trim();
-                // Skip tags, empty lines, and already proxied links
                 if (!trimmed || trimmed.startsWith('#') || trimmed.includes(proxyPath)) return line;
 
                 try {
                     const resolvedUrl = new URL(trimmed, url).href;
+                    // Automatically append mandatory proxy routing for every chunk
                     return `${baseUrl}${encodeURIComponent(resolvedUrl)}`;
                 } catch (e) {
                     return line;
@@ -72,22 +85,23 @@ export async function GET(request: NextRequest) {
                     'Content-Type': 'application/vnd.apple.mpegurl',
                     'Access-Control-Allow-Origin': '*',
                     'Cache-Control': 'no-store, no-cache, must-revalidate',
+                    'X-ZD-Active': 'AUTO'
                 },
             });
         }
 
-        // Segments or images
+        // Handle Media Segments
         const buffer = await response.arrayBuffer();
         return new NextResponse(buffer, {
             status: 200,
             headers: {
                 'Content-Type': contentType,
                 'Access-Control-Allow-Origin': '*',
-                'Cache-Control': 'public, max-age=3600',
+                'Cache-Control': 'public, max-age=60',
             },
         });
     } catch (error) {
-        console.error('Proxy Fatal Error:', error);
-        return new NextResponse('Proxy failed', { status: 500 });
+        console.error('Fatal Proxy Error:', error);
+        return new NextResponse('Connection failed', { status: 500 });
     }
 }
