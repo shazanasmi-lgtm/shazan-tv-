@@ -16,7 +16,7 @@ function resolveUrl(base: string, relative: string): string {
 }
 
 // Rewrite .m3u8 playlist so all segment/key URIs go through this proxy
-function rewriteM3U8(text: string, baseUrl: string): string {
+function rewriteM3U8(text: string, baseUrl: string, proxyBaseUrl: string): string {
     return text
         .split('\n')
         .map(line => {
@@ -26,7 +26,7 @@ function rewriteM3U8(text: string, baseUrl: string): string {
             if (trimmed.startsWith('#')) {
                 return line.replace(/URI="([^"]+)"/g, (_, uri) => {
                     const abs = resolveUrl(baseUrl, uri);
-                    return `URI="/api/proxy?url=${encodeURIComponent(abs)}"`;
+                    return `URI="${proxyBaseUrl}?url=${encodeURIComponent(abs)}"`;
                 });
             }
 
@@ -38,7 +38,7 @@ function rewriteM3U8(text: string, baseUrl: string): string {
 
             // Segment lines (relative or absolute URL)
             const abs = resolveUrl(baseUrl, trimmed);
-            return `/api/proxy?url=${encodeURIComponent(abs)}`;
+            return `${proxyBaseUrl}?url=${encodeURIComponent(abs)}`;
         })
         .join('\n');
 }
@@ -138,6 +138,10 @@ export async function GET(request: NextRequest) {
         console.log(`[proxy] Requesting: ${targetUrl}`);
         const result = await fetchUrl(targetUrl);
         
+        // Detect current proxy base URL (absolute) for rewriting
+        const reqUrl = new URL(request.url);
+        const proxyBaseUrl = `${reqUrl.protocol}//${reqUrl.host}${reqUrl.pathname}`;
+
         const contentType = result.headers['content-type'] || '';
         console.log(`[proxy] Status: ${result.status}, Content-Type: ${contentType}`);
 
@@ -152,7 +156,7 @@ export async function GET(request: NextRequest) {
 
         if (isM3U8) {
             const text = result.buffer.toString('utf8');
-            const rewritten = rewriteM3U8(text, result.finalUrl);
+            const rewritten = rewriteM3U8(text, result.finalUrl, proxyBaseUrl);
             return new NextResponse(rewritten, {
                 status: result.status,
                 headers: {
