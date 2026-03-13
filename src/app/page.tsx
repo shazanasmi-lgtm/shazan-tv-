@@ -28,14 +28,16 @@ type Tab = 'home' | 'channels' | 'settings';
 function proxy(url: string) {
     if (!url) return url;
     
-    // Vercel deployment URL (Independent of PC)
-    const VERCEL_PROXY = 'https://shazan-tv.vercel.app/api/proxy';
+    // Auto-detect environment
+    const isLocal = typeof window !== 'undefined' && window.location.hostname === 'localhost';
     
-    // Local PC fallback (Only for testing while PC is on)
-    // const LOCAL_PROXY = 'http://10.55.8.44:3001/api/proxy';
-
-    // IMPORTANT: When building for Phone (Vercel), we use the Vercel URL
-    return `${VERCEL_PROXY}?url=${encodeURIComponent(url)}`;
+    // In APK (localhost), we must use absolute Vercel URL. 
+    // On Vercel, we use relative path.
+    const VERCEL_DOMAIN = 'https://shazan-tv-app.vercel.app';
+    const PROXY_PATH = '/api/proxy';
+    
+    const base = isLocal ? VERCEL_DOMAIN + PROXY_PATH : PROXY_PATH;
+    return `${base}?url=${encodeURIComponent(url)}`;
 }
 
 // ─────────────────────────────────────────────
