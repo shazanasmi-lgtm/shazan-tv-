@@ -1,0 +1,68 @@
+[
+  {
+    "id": "asia_tv",
+    "status": 200,
+    "isM3u8": true
+  },
+  {
+    "id": "charana",
+    "error": "The operation was aborted due to timeout"
+  },
+  {
+    "id": "jaya",
+    "error": "The operation was aborted due to timeout"
+  },
+  {
+    "id": "monara",
+    "status": 404,
+    "isM3u8": false
+  },
+  {
+    "id": "ndtv_lk",
+    "status": 200,
+    "isM3u8": true
+  },
+  {
+    "id": "nethra",
+    "error": "The operation was aborted due to timeout"
+  },
+  {
+    "id": "shakthi",
+    "error": "The operation was aborted due to timeout"
+  },
+  {
+    "id": "shraddha",
+    "error": "The operation was aborted due to timeout"
+  },
+  {
+    "id": "siyatha",
+    "status": 200,
+    "isM3u8": true
+  },
+  {
+    "id": "star_tamil",
+    "error": "The operation was aborted due to timeout"
+  },
+  {
+    "id": "swarnavahini",
+    "status": 404,
+    "isM3u8": false
+  },
+  {
+    "id": "buddhist",
+    "error": "The operation was aborted due to timeout"
+  },
+  {
+    "id": "tnl",
+    "error": "The operation was aborted due to timeout"
+  },
+  {
+    "id": "tv_1",
+    "status": 200,
+    "isM3u8": true
+  },
+  {
+    "id": "vasantham",
+    "error": "The operation was aborted due to timeout"
+  }
+]

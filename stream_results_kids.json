@@ -1,0 +1,27 @@
+[
+  {
+    "id": "disney",
+    "status": 200,
+    "isM3u8": true
+  },
+  {
+    "id": "disney_jr",
+    "status": 404,
+    "isM3u8": false
+  },
+  {
+    "id": "nickelodeon",
+    "status": 200,
+    "isM3u8": true
+  },
+  {
+    "id": "nick_jr",
+    "status": 404,
+    "isM3u8": false
+  },
+  {
+    "id": "sony_yay",
+    "status": 200,
+    "isM3u8": true
+  }
+]

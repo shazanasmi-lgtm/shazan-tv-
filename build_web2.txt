@@ -1,0 +1,71 @@
+﻿
+> shazan-tv-app@0.1.0 build
+> next build
+
+  Ôû▓ Next.js 14.2.3
+
+   Creating an optimized production build ...
+node.exe : Failed to compile.
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (Failed   
+  to compile.:String) [],    
+ RemoteException
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+
+src\app\layout.tsx
+An error occurred in 
+`next/font`.
+
+Error: Cannot find module 'C:
+\Users\Shazan\OneDrive\Deskto
+p\Shazan TV\shazan-tv-app\nod
+e_modules\lines-and-columns\b
+uild\index.js'. Please 
+verify that the package.json 
+has a valid "main" entry
+    at tryPackage (node:inter
+nal/modules/cjs/loader:524:19
+)
+    at Module._findPath (node
+:internal/modules/cjs/loader:
+792:18)
+    at Module.<anonymous> (no
+de:internal/modules/cjs/loade
+r:1405:27)
+    at C:\Users\Shazan\OneDri
+ve\Desktop\Shazan TV\shazan-t
+v-app\node_modules\next\dist\
+server\require-hook.js:55:36
+    at defaultResolveImpl (no
+de:internal/modules/cjs/loade
+r:1058:19)
+    at 
+resolveForCJSWithHooks (node:
+internal/modules/cjs/loader:1
+063:22)
+    at Module._load (node:int
+ernal/modules/cjs/loader:1226
+:37)
+    at 
+TracingChannel.traceSync (nod
+e:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:i
+nternal/modules/cjs/loader:24
+4:24)
+    at Module.<anonymous> (no
+de:internal/modules/cjs/loade
+r:1503:12)
+
+
+> Build failed because of 
+webpack errors

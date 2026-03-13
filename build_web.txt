@@ -1,0 +1,75 @@
+﻿
+> shazan-tv-app@0.1.0 build
+> next build
+
+node.exe : node:internal/modu
+les/cjs/loader:1423
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (node:in  
+  ternal/modules/cjs/loade   
+ r:1423:String) [], Remot    
+eException
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+  throw err;
+  ^
+
+Error: Cannot find module 
+'../build/output/log'
+Require stack:
+- C:\Users\Shazan\OneDrive\De
+sktop\Shazan TV\shazan-tv-app
+\node_modules\next\dist\bin\n
+ext
+    at Module.<anonymous> (no
+de:internal/modules/cjs/loade
+r:1420:15)
+    at C:\Users\Shazan\OneDri
+ve\Desktop\Shazan TV\shazan-t
+v-app\node_modules\next\dist\
+server\require-hook.js:55:36
+    at defaultResolveImpl (no
+de:internal/modules/cjs/loade
+r:1058:19)
+    at 
+resolveForCJSWithHooks (node:
+internal/modules/cjs/loader:1
+063:22)
+    at Module._load (node:int
+ernal/modules/cjs/loader:1226
+:37)
+    at 
+TracingChannel.traceSync (nod
+e:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:i
+nternal/modules/cjs/loader:24
+4:24)
+    at Module.<anonymous> (no
+de:internal/modules/cjs/loade
+r:1503:12)
+    at mod.require (C:\Users\
+Shazan\OneDrive\Desktop\Shaza
+n TV\shazan-tv-app\node_modul
+es\next\dist\server\require-h
+ook.js:65:28)
+    at require (node:internal
+/modules/helpers:152:16) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'C:\\Users\\Shazan\\OneDr
+ive\\Desktop\\Shazan TV\\shaz
+an-tv-app\\node_modules\\next
+\\dist\\bin\\next'
+  ]
+}
+
+Node.js v24.11.0

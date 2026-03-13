@@ -1,0 +1,17 @@
+[
+  {
+    "id": "aljazeera",
+    "status": 200,
+    "isM3u8": true
+  },
+  {
+    "id": "france24",
+    "status": 403,
+    "isM3u8": false
+  },
+  {
+    "id": "redbull",
+    "status": 200,
+    "isM3u8": false
+  }
+]

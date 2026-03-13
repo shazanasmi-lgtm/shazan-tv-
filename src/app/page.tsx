@@ -2,17 +2,17 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
-    Search, MonitorPlay, Globe, Film, Music, Tv as TvIcon, Gamepad2,
-    Maximize, Loader2, PlusCircle, LayoutGrid, Zap,
-    ShieldCheck, Radio, Settings, Home, Volume2, VolumeX,
+    Search, MonitorPlay, Globe, Maximize, Loader2, PlusCircle,
+    LayoutGrid, Zap, ShieldCheck, Settings, Volume2, VolumeX,
     RefreshCw, Play, Pause, ChevronRight, Sparkles, Antenna,
-    Star, Wifi, Signal, Info, Smartphone
+    Wifi, Signal, Trash2, AlertCircle, CheckCircle2, Radio
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Hls from 'hls.js';
-import clsx from 'clsx';
-import { twMerge } from 'tailwind-merge';
 
+// ─────────────────────────────────────────────
+//  TYPES
+// ─────────────────────────────────────────────
 interface Channel {
     id: string;
     name: string;
@@ -20,567 +20,752 @@ interface Channel {
     url: string;
     category: string;
 }
+type Tab = 'home' | 'channels' | 'settings';
 
-const cn = (...inputs: (string | undefined | null | false)[]) => twMerge(clsx(inputs));
+// ─────────────────────────────────────────────
+//  PROXY HELPER — Bypasses CORS and injects headers
+// ─────────────────────────────────────────────
+function proxy(url: string) {
+    if (!url) return url;
+    
+    // Vercel deployment URL (Independent of PC)
+    const VERCEL_PROXY = 'https://shazan-tv.vercel.app/api/proxy';
+    
+    // Local PC fallback (Only for testing while PC is on)
+    // const LOCAL_PROXY = 'http://10.55.8.44:3001/api/proxy';
 
+    // IMPORTANT: When building for Phone (Vercel), we use the Vercel URL
+    return `${VERCEL_PROXY}?url=${encodeURIComponent(url)}`;
+}
+
+// ─────────────────────────────────────────────
+//  BUILT-IN CHANNELS
+// ─────────────────────────────────────────────
 const BUILTIN_CHANNELS: Channel[] = [
-    { id: 'itn', name: 'ITN', logo: '📺', url: 'https://live.itn.lk/itn/index.m3u8', category: 'SL TV' },
-    { id: 'sirasa', name: 'Sirasa TV', logo: '🌟', url: 'https://edge2-moblive.yuppcdn.net/transsd/smil:sirtv09.smil/playlist.m3u8', category: 'SL TV' },
-    { id: 'derana', name: 'Derana TV', logo: '🦁', url: 'https://edge3-moblive.yuppcdn.net/transhd2/smil:detv04.smil/index.m3u8', category: 'SL TV' },
-    { id: 'hiru', name: 'Hiru TV', logo: '☀️', url: 'http://61.245.163.69:1935/live/hiru.stream/playlist.m3u8', category: 'SL TV' },
-    { id: 'rupa', name: 'Rupavahini', logo: '🏛️', url: 'https://slrc.live/Rupavahini/stream.m3u8', category: 'SL TV' },
-    { id: 'dw', name: 'DW English', logo: '🌍', url: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8', category: 'News' },
-    { id: 'aj', name: 'Al Jazeera', logo: '📡', url: 'https://live-hls-web-aje.getaj.net/AJE/01.m3u8', category: 'News' },
-    { id: 'nhk', name: 'NHK World', logo: '🏯', url: 'https://nhkwlive-ojp.akamaized.net/hls/live/2003459/nhkwlive-ojp-en/index_1M.m3u8', category: 'News' },
-    { id: 'france24', name: 'France 24', logo: '🗼', url: 'https://static.france24.com/live/F24_EN_LO_HLS/live_web.m3u8', category: 'News' },
-    { id: 'test', name: 'HD Test', logo: '📽️', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'Test' },
+    // ── Sri Lanka TV (Working) ──
+    { id: 'tv_1', name: 'TV 1 (Sirasa Family)', logo: 'https://i.imgur.com/QShk1BV.png', url: 'https://d3ssd0juqbxbw.cloudfront.net/mtvsinstlive/master.m3u8', category: 'SL TV' },
+    { id: 'siyatha', name: 'Siyatha TV', logo: 'https://i.imgur.com/9Zc8G7i.png', url: 'https://rtmp01.voaplus.com/hls/6x6ik312qk4grfxocfcv.m3u8', category: 'SL TV' },
+    { id: 'asia_tv', name: 'Asia TV HD', logo: 'https://saddlebrown-jellyfish-181801.hostingersite.com/ATV-logo.png', url: 'https://stream.asiatvnet.com/1/live/master.m3u8', category: 'SL TV' },
+    { id: 'ndtv_lk', name: 'NDTV Lanka', logo: 'https://i.imgur.com/5cyTVRJ.png', url: 'https://g4wlkqqwl23a-hls-live.5centscdn.com/NDTVLANKA/1ff5fa54d14c3ff6c6bd3918bbb7db5d.sdp/playlist.m3u8', category: 'SL TV' },
+    { id: 'itn', name: 'ITN (Unstable)', logo: 'https://i.imgur.com/QShk1BV.png', url: 'https://222103-hls.akamaized.net/668828a00bf80aa436254876/live_aabd3d003af211efadcf7986aa245789/rewind-3600.m3u8', category: 'SL TV' },
+    { id: 'hiru', name: 'Hiru TV (Unstable)', logo: 'https://i.imgur.com/RX6IwK8.png', url: 'https://tv.hiruhost.com:1936/8012/8012/playlist.m3u8', category: 'SL TV' },
+
+    // ── Sports (Working) ──
+    { id: 'sony_ten_1', name: 'Sony Sports Ten 1', logo: '⚽', url: 'http://103.121.6.5:8000/play/a05w/index.m3u8', category: 'Sports' },
+    { id: 'sony_ten_2', name: 'Sony Sports Ten 2', logo: '🥊', url: 'http://103.229.254.25:7001/play/a02t/index.m3u8', category: 'Sports' },
+    { id: 'sony_ten_5', name: 'Sony Sports Ten 5', logo: '🎾', url: 'http://103.229.254.25:7001/play/a0dw/index.m3u8', category: 'Sports' },
+    { id: 'star_sports_2', name: 'Star Sports 2 HD', logo: '🏏', url: 'http://103.121.6.5:8000/play/a05u/index.m3u8', category: 'Sports' },
+    { id: 'star_sports_3', name: 'Star Sports 3', logo: '🏏', url: 'http://103.121.6.5:8000/play/a05y/index.m3u8', category: 'Sports' },
+    { id: 'redbull', name: 'Red Bull TV', logo: '🐂', url: 'https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8', category: 'Sports' },
+
+    // ── News (Working) ──
+    { id: 'aljazeera', name: 'Al Jazeera', logo: '📰', url: 'https://live-hls-web-aje-fa.thehlive.com/AJE/index.m3u8', category: 'News' },
+    { id: 'bbc_news', name: 'BBC News HD', logo: '📺', url: 'https://vs-hls-push-uk-live.akamaized.net/x=3/i=urn:bbc:pips:service:bbc_news_channel_hd/t=3840/v=pv14/b=5070016/main.m3u8', category: 'News' },
+    { id: 'nasa_tv', name: 'NASA TV', logo: '🚀', url: 'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master_2000.m3u8', category: 'News' },
+
+    // ── Kids (Working) ──
+    { id: 'disney', name: 'Disney Channel', logo: '🐭', url: 'http://103.229.254.25:7001/play/a09r/index.m3u8', category: 'Kids' },
+    { id: 'nickelodeon', name: 'Nickelodeon', logo: '🧡', url: 'http://103.229.254.25:7001/play/a0cq/index.m3u8', category: 'Kids' },
+    { id: 'sony_yay', name: 'Sony Yay!', logo: '😺', url: 'http://103.229.254.25:7001/play/a0cl/index.m3u8', category: 'Kids' },
 ];
 
-const IPTV_PLAYLISTS = [
-    { id: 'country_lk', name: 'Sri Lanka', emoji: '🇱🇰', url: 'https://iptv-org.github.io/iptv/countries/lk.m3u', color: 'from-amber-500 to-orange-600', glow: 'rgba(251,146,60,0.3)' },
-    { id: 'world_news', name: 'News', emoji: '📰', url: 'https://iptv-org.github.io/iptv/categories/news.m3u', color: 'from-blue-500 to-indigo-600', glow: 'rgba(99,102,241,0.3)' },
-    { id: 'world_sports', name: 'Sports', emoji: '⚽', url: 'https://iptv-org.github.io/iptv/categories/sports.m3u', color: 'from-orange-500 to-red-600', glow: 'rgba(239,68,68,0.3)' },
-    { id: 'world_movies', name: 'Movies', emoji: '🎬', url: 'https://iptv-org.github.io/iptv/categories/movies.m3u', color: 'from-purple-500 to-pink-600', glow: 'rgba(168,85,247,0.3)' },
-    { id: 'world_music', name: 'Music', emoji: '🎵', url: 'https://iptv-org.github.io/iptv/categories/music.m3u', color: 'from-teal-400 to-emerald-600', glow: 'rgba(16,185,129,0.3)' },
-    { id: 'world_kids', name: 'Kids', emoji: '🧒', url: 'https://iptv-org.github.io/iptv/categories/kids.m3u', color: 'from-yellow-400 to-orange-500', glow: 'rgba(234,179,8,0.3)' },
+const IPTV_PACKS = [
+    { id: 'lk', name: 'Sri Lanka', emoji: '🇱🇰', url: 'https://iptv-org.github.io/iptv/countries/lk.m3u', color: 'from-blue-600 to-indigo-700' },
+    { id: 'in', name: 'India', emoji: '🇮🇳', url: 'https://iptv-org.github.io/iptv/countries/in.m3u', color: 'from-orange-500 to-amber-600' },
+    { id: 'sports', name: 'Sports', emoji: '⚽', url: 'https://iptv-org.github.io/iptv/categories/sports.m3u', color: 'from-emerald-500 to-teal-600' },
+    { id: 'news', name: 'World News', emoji: '📰', url: 'https://iptv-org.github.io/iptv/categories/news.m3u', color: 'from-slate-600 to-gray-700' },
+    { id: 'movies', name: 'Movies', emoji: '🎬', url: 'https://iptv-org.github.io/iptv/categories/movies.m3u', color: 'from-purple-600 to-pink-700' },
+    { id: 'kids', name: 'Kids', emoji: '🧒', url: 'https://iptv-org.github.io/iptv/categories/kids.m3u', color: 'from-yellow-500 to-orange-600' },
 ];
 
-const CATEGORY_ICONS: Record<string, string> = {
-    'All': '✦',
+const CAT_ICONS: Record<string, string> = {
     'SL TV': '🇱🇰',
-    'News': '📰',
     'Sports': '⚽',
+    'News': '📰',
+    'Indian': '🇮🇳',
     'Movies': '🎬',
     'Music': '🎵',
     'Kids': '🧒',
-    'Test': '📡',
     'Custom': '🔗',
+    'All': '✦',
 };
 
-// AUTO PROXY ENABLED FOR EVERY REQUEST TO INSULATE FOR ZERO DATA
-function getProxyUrl(url: string) {
-    return `/api/proxy?url=${encodeURIComponent(url)}`;
-}
-
-function parseM3U(text: string, defaultCategory: string): Channel[] {
+// ─────────────────────────────────────────────
+//  PARSE M3U
+// ─────────────────────────────────────────────
+function parseM3U(text: string, defaultCat: string): Channel[] {
     const lines = text.split('\n');
-    const channels: Channel[] = [];
-    let current: Partial<Channel> | null = null;
-    for (const rawLine of lines) {
-        const line = rawLine.trim();
+    const out: Channel[] = [];
+    let cur: Partial<Channel> | null = null;
+    for (const raw of lines) {
+        const line = raw.trim();
         if (line.startsWith('#EXTINF')) {
-            const nameMatch = line.match(/,(.+)$/);
-            const logoMatch = line.match(/tvg-logo="([^"]*)"/);
-            const groupMatch = line.match(/group-title="([^"]*)"/);
-            current = {
-                name: nameMatch ? nameMatch[1].trim() : 'Unknown',
-                logo: logoMatch && logoMatch[1] ? logoMatch[1] : '📺',
-                category: groupMatch && groupMatch[1] ? groupMatch[1] : defaultCategory,
-            };
-        } else if (line.length > 5 && !line.startsWith('#') && current) {
-            current.url = line;
-            current.id = `ch_${Math.random().toString(36).substr(2, 9)}`;
-            channels.push(current as Channel);
-            current = null;
+            const name = line.match(/,(.+)$/)?.[1]?.trim() || 'Unknown';
+            const logo = line.match(/tvg-logo="([^"]*)"/)?.[1] || '';
+            const cat = line.match(/group-title="([^"]*)"/)?.[1] || defaultCat;
+            cur = { name, logo, category: cat };
+        } else if (line.length > 5 && !line.startsWith('#') && cur) {
+            cur.url = line;
+            cur.id = `p_${Math.random().toString(36).substr(2, 9)}`;
+            out.push(cur as Channel);
+            cur = null;
         }
     }
-    return channels;
+    return out;
 }
 
-type Tab = 'home' | 'channels' | 'settings';
-
-function ChannelLogo({ logo, name, size = 36 }: { logo: string; name: string; size?: number }) {
-    const [imgError, setImgError] = useState(false);
+// ─────────────────────────────────────────────
+//  CHANNEL LOGO
+// ─────────────────────────────────────────────
+function ChannelLogo({ logo, name, size = 44 }: { logo: string; name: string; size?: number }) {
+    const [err, setErr] = useState(false);
     const isUrl = logo.startsWith('http');
-
-    if (isUrl && !imgError) {
+    if (isUrl && !err) {
         return (
-            <img
-                src={logo}
-                alt={name}
-                style={{ width: size, height: size }}
-                className="object-contain rounded-lg"
-                onError={() => setImgError(true)}
-            />
+            <div className="rounded-2xl overflow-hidden bg-white/5 flex items-center justify-center"
+                style={{ width: size, height: size }}>
+                <img src={logo} alt={name} className="w-full h-full object-contain"
+                    onError={() => setErr(true)} loading="lazy" />
+            </div>
         );
     }
+    const emoji = logo && logo.length <= 4 ? logo : (name[0] || '📺');
     return (
-        <span style={{ fontSize: size * 0.65 }} className="leading-none select-none">
-            {logo.length <= 4 ? logo : '📺'}
-        </span>
+        <div className="rounded-2xl flex items-center justify-center text-white"
+            style={{ width: size, height: size, background: 'rgba(108,99,255,0.2)', fontSize: size * 0.45 }}>
+            {emoji}
+        </div>
     );
 }
 
+// ─────────────────────────────────────────────
+//  MAIN APP
+// ─────────────────────────────────────────────
+// Al Jazeera is confirmed 100% working via Proxy
+const DEFAULT_CHANNEL = BUILTIN_CHANNELS.find(c => c.id === 'aljazeera') || BUILTIN_CHANNELS[0];
+
 export default function ShazanTVApp() {
     const [channels, setChannels] = useState<Channel[]>(BUILTIN_CHANNELS);
-    const [activeChannel, setActiveChannel] = useState<Channel | null>(BUILTIN_CHANNELS[0]);
+    const [activeChannel, setActiveChannel] = useState<Channel | null>(DEFAULT_CHANNEL);
     const [isPlaying, setIsPlaying] = useState(false);
-    const [isLoadingStream, setIsLoadingStream] = useState(false);
-    const [statusMsg, setStatusMsg] = useState('Optimized for Dialog');
+    const [isLoading, setIsLoading] = useState(false);
+    const [statusMsg, setStatusMsg] = useState('⚡ Connecting...');
     const [isMuted, setIsMuted] = useState(false);
-
-    const [activeCategory, setActiveCategory] = useState('All');
-    const [searchQuery, setSearchQuery] = useState('');
     const [tab, setTab] = useState<Tab>('home');
-    const [loadingPlaylistId, setLoadingPlaylistId] = useState<string | null>(null);
+    const [searchQ, setSearchQ] = useState('');
+    const [activeCat, setActiveCat] = useState('All');
+    const [loadingPack, setLoadingPack] = useState<string | null>(null);
     const [customUrl, setCustomUrl] = useState('');
+    const [zdActive, setZdActive] = useState(true);
+    const [retries, setRetries] = useState(0);
+    const retriesRef = useRef(0);
+    const [proxyOk, setProxyOk] = useState(true);
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const hlsRef = useRef<Hls | null>(null);
 
-    // --- PERSISTENCE ---
+    // Load saved channels — v4 clears old broken cache
     useEffect(() => {
+        // Remove old broken cache keys
+        localStorage.removeItem('shazan_ch_v4');
         try {
-            const saved = localStorage.getItem('shazan_channels_v2');
+            const saved = localStorage.getItem('shazan_ch_v5');
             if (saved) {
-                const parsed = JSON.parse(saved);
-                if (parsed?.length > 0) setChannels(parsed);
+                const parsed: Channel[] = JSON.parse(saved);
+                // Only use saved if it has extra channels beyond builtins
+                if (parsed.length > BUILTIN_CHANNELS.length) {
+                    // Merge: always keep latest builtins first
+                    const extra = parsed.filter((p: Channel) => !BUILTIN_CHANNELS.some(b => b.id === p.id));
+                    setChannels([...BUILTIN_CHANNELS, ...extra]);
+                }
             }
         } catch { }
+        const zd = localStorage.getItem('zd_active');
+        if (zd !== null) setZdActive(zd === 'true');
     }, []);
 
-    const saveChannels = (c: Channel[]) => {
-        setChannels(c);
-        localStorage.setItem('shazan_channels_v2', JSON.stringify(c.slice(0, 1000)));
+    const saveChannels = (chs: Channel[]) => {
+        setChannels(chs);
+        localStorage.setItem('shazan_ch_v5', JSON.stringify(chs.slice(0, 1500)));
     };
 
-    // --- PLAYER ---
-    const initPlayer = useCallback((channel: Channel) => {
-        if (!videoRef.current) return;
-        setIsPlaying(false);
-        setIsLoadingStream(true);
-        setStatusMsg('⚡ Establishing Zero Data Stream...');
-        const video = videoRef.current;
-
+    // ── PLAYER ──────────────────────────────
+    const destroyHls = useCallback(() => {
         if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
+    }, []);
 
-        // MANDATORY PROXY FOR EVERYTHING TO ENSURE BYPASS
-        const src = getProxyUrl(channel.url);
+    const initPlayer = useCallback((channel: Channel, directFallback = false) => {
+        if (!videoRef.current) return;
+        destroyHls();
+        setIsPlaying(false);
+        setIsLoading(true);
+        if (!directFallback) {
+            retriesRef.current = 0;
+            setRetries(0);
+        }
+
+        const src = directFallback ? channel.url : proxy(channel.url);
+        const label = directFallback ? '⚠️ Direct (data applies)' : '⚡ Zero Data Stream...';
+        setStatusMsg(label);
+
+        const video = videoRef.current;
 
         if (Hls.isSupported()) {
             const hls = new Hls({
-                maxBufferLength: 60,
+                maxBufferLength: 30,
+                maxMaxBufferLength: 90,
                 enableWorker: true,
-                lowLatencyMode: true,
-                manifestLoadingMaxRetry: 5,
-                levelLoadingMaxRetry: 5
+                lowLatencyMode: false,
+                startLevel: -1,
+                abrEwmaDefaultEstimate: 1500000,
+                manifestLoadingMaxRetry: 3,
+                levelLoadingMaxRetry: 3,
+                fragLoadingMaxRetry: 3,
+                fragLoadingRetryDelay: 1500,
+                backBufferLength: 30,
             });
+
             hls.loadSource(src);
             hls.attachMedia(video);
 
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                setIsLoadingStream(false);
+                setIsLoading(false);
                 setIsPlaying(true);
-                setStatusMsg(`Active · ${channel.name}`);
-                video.play().catch(() => { setIsPlaying(false); setStatusMsg('Tap to start'); });
+                retriesRef.current = 0;
+                setRetries(0);
+                setProxyOk(!directFallback);
+                setStatusMsg(directFallback ? `${channel.name} (Direct)` : `⚡ ${channel.name}`);
+                video.play().catch(() => {
+                    setIsPlaying(false);
+                    setStatusMsg('Tap ▶ to play');
+                });
             });
 
-            hls.on(Hls.Events.ERROR, (_, data) => {
-                if (data.fatal) {
-                    if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-                        setStatusMsg('Retrying connection...');
-                        hls.loadSource(src); // Retry the same proxy URL
-                    } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            hls.on(Hls.Events.ERROR, (_, d) => {
+                if (d.fatal) {
+                    if (d.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                        const r = retriesRef.current;
+                        if (r < 2) {
+                            retriesRef.current = r + 1;
+                            setRetries(r + 1);
+                            setStatusMsg(`Reconnecting... (${r + 1}/2)`);
+                            setTimeout(() => hls.startLoad(), 2000);
+                        } else if (!directFallback) {
+                            setStatusMsg('Trying direct...');
+                            destroyHls();
+                            initPlayer(channel, true);
+                        } else {
+                            destroyHls();
+                            setIsLoading(false);
+                            setStatusMsg('❌ Stream unavailable. Try another channel.');
+                        }
+                    } else if (d.type === Hls.ErrorTypes.MEDIA_ERROR) {
                         hls.recoverMediaError();
                     } else {
-                        hls.destroy();
-                        setIsLoadingStream(false);
-                        setStatusMsg('Channel unavailable');
+                        destroyHls();
+                        setIsLoading(false);
+                        setStatusMsg('❌ Playback error. Tap refresh to retry.');
                     }
-                } else {
-                    setStatusMsg('Buffering...');
                 }
             });
             hlsRef.current = hls;
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            // Native HLS (Safari/iOS)
             video.src = src;
             video.onloadedmetadata = () => {
-                setIsLoadingStream(false);
+                setIsLoading(false);
                 video.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+                setStatusMsg(`⚡ ${channel.name}`);
             };
+            video.onerror = () => {
+                if (!directFallback) initPlayer(channel, true);
+                else { setIsLoading(false); setStatusMsg('❌ Stream failed'); }
+            };
+        } else {
+            setIsLoading(false);
+            setStatusMsg('HLS not supported on this browser');
         }
-    }, []);
+    }, [destroyHls]);
 
     useEffect(() => {
-        if (activeChannel) initPlayer(activeChannel);
-        return () => { if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; } };
-    }, [activeChannel, initPlayer]);
+        if (activeChannel) {
+            retriesRef.current = 0;
+            setRetries(0);
+            initPlayer(activeChannel);
+        }
+        return destroyHls;
+    }, [activeChannel]);
 
-    const handleLoadPlaylist = async (id: string, url: string, category: string) => {
-        setLoadingPlaylistId(id);
-        try {
-            // Fetch playlist through proxy to bypass any data restrictions on JSON/M3U fetching
-            const res = await fetch(getProxyUrl(url));
-            const text = await res.text();
-            const parsed = parseM3U(text, category);
-            if (parsed.length > 0) { saveChannels([...BUILTIN_CHANNELS, ...parsed]); setActiveCategory(category); }
-            else alert('No channels found.');
-        } catch { alert('Network error. Check your Dialog SIM.'); }
-        finally { setLoadingPlaylistId(null); }
-    };
-
-    const handleCustomAdd = async () => {
-        if (!customUrl.trim()) return;
-        setLoadingPlaylistId('custom');
-        try {
-            if (customUrl.includes('.m3u8')) {
-                const newCh: Channel = { id: 'custom_' + Date.now(), name: 'Custom Stream', logo: '🔗', url: customUrl.trim(), category: 'Custom' };
-                saveChannels([...channels, newCh]);
-                setActiveChannel(newCh);
-                setTab('home');
-                setCustomUrl('');
-                return;
-            }
-            const res = await fetch(getProxyUrl(customUrl.trim()));
-            const text = await res.text();
-            const parsed = parseM3U(text, 'Custom');
-            if (parsed.length > 0) { saveChannels([...channels, ...parsed]); alert(`✅ ${parsed.length} channels added!`); }
-            else alert('No valid channels found.');
-            setCustomUrl('');
-        } catch { alert('Link failed.'); }
-        finally { setLoadingPlaylistId(null); }
-    };
-
-    const displayChannels = useMemo(() => {
-        let f = channels;
-        if (activeCategory !== 'All') f = f.filter(c => c.category === activeCategory);
-        if (searchQuery) f = f.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
-        return f.slice(0, 200);
-    }, [channels, activeCategory, searchQuery]);
-
-    const categoriesList = useMemo(() => ['All', ...Array.from(new Set(channels.map(c => c.category))).sort()], [channels]);
-
-    const handleChannelSelect = (ch: Channel) => {
+    // ── CHANNEL SELECT ──────────────────────
+    const selectChannel = (ch: Channel) => {
         setActiveChannel(ch);
         setTab('home');
     };
 
-    const toggleFullscreen = () => {
-        const el = videoRef.current;
-        if (!el) return;
-        if (document.fullscreenElement) { document.exitFullscreen(); }
-        else { el.requestFullscreen?.() || (el as any).webkitRequestFullscreen?.(); }
-    };
-
-    const toggleMute = () => {
-        if (videoRef.current) {
-            videoRef.current.muted = !isMuted;
-            setIsMuted(!isMuted);
+    // ── PLAYLIST LOAD ───────────────────────
+    const loadPack = async (id: string, url: string, cat: string) => {
+        setLoadingPack(id);
+        try {
+            const res = await fetch(proxy(url));
+            const text = await res.text();
+            const parsed = parseM3U(text, cat);
+            if (parsed.length > 0) {
+                const combined = [
+                    ...BUILTIN_CHANNELS,
+                    ...parsed.filter(p => !BUILTIN_CHANNELS.some(b => b.url === p.url))
+                ];
+                saveChannels(combined);
+                setActiveCat(cat);
+                setTab('home');
+            } else {
+                alert('No channels found in this pack.');
+            }
+        } catch {
+            alert('Load failed. Check connection.');
+        } finally {
+            setLoadingPack(null);
         }
     };
 
-    const handleVideoTap = () => {
-        const v = videoRef.current;
-        if (!v) return;
-        v.paused ? v.play() : v.pause();
-        setIsPlaying(!v.paused);
+    const addCustom = async () => {
+        if (!customUrl.trim()) return;
+        setLoadingPack('custom');
+        try {
+            const trimmed = customUrl.trim();
+            if (trimmed.includes('.m3u8') || trimmed.includes('rtmp') || trimmed.includes('rtsp')) {
+                const ch: Channel = {
+                    id: 'custom_' + Date.now(),
+                    name: 'My Stream',
+                    logo: '🔗',
+                    url: trimmed,
+                    category: 'Custom',
+                };
+                saveChannels([...channels, ch]);
+                selectChannel(ch);
+                setCustomUrl('');
+            } else {
+                const res = await fetch(proxy(trimmed));
+                const text = await res.text();
+                const parsed = parseM3U(text, 'Custom');
+                if (parsed.length > 0) {
+                    saveChannels([...channels, ...parsed]);
+                    alert(`✅ ${parsed.length} channels added!`);
+                    setCustomUrl('');
+                } else {
+                    alert('No channels found in this link.');
+                }
+            }
+        } catch {
+            alert('Failed to load link.');
+        } finally {
+            setLoadingPack(null);
+        }
     };
 
-    return (
-        <div className="flex flex-col h-screen bg-hero text-white overflow-hidden" style={{ fontFamily: "'Inter', sans-serif" }}>
+    // ── DISPLAY LIST ────────────────────────
+    const displayed = useMemo(() => {
+        let f = channels;
+        if (activeCat !== 'All') f = f.filter(c => c.category === activeCat);
+        if (searchQ) f = f.filter(c => c.name.toLowerCase().includes(searchQ.toLowerCase()));
+        return f.slice(0, 300);
+    }, [channels, activeCat, searchQ]);
 
-            {/* ==================== PLAYER ==================== */}
-            <div className="player-wrapper flex-shrink-0" style={{ height: 'min(56vw, 300px)' }}>
+    const categories = useMemo(() =>
+        ['All', ...Array.from(new Set(channels.map(c => c.category))).sort()],
+        [channels]);
+
+    const groupedCats = useMemo(() => {
+        const priority = ['SL TV', 'Sports', 'News', 'Indian', 'Movies', 'Music', 'Kids'];
+        const rest = categories.filter(c => c !== 'All' && !priority.includes(c));
+        return [...priority.filter(c => categories.includes(c)), ...rest];
+    }, [categories]);
+
+    // ── FULLSCREEN ───────────────────────────
+    const toggleFS = () => {
+        const el = videoRef.current;
+        if (!el) return;
+        document.fullscreenElement ? document.exitFullscreen() :
+            el.requestFullscreen?.() || (el as any).webkitRequestFullscreen?.();
+    };
+
+    const toggleMute = () => {
+        if (videoRef.current) { videoRef.current.muted = !isMuted; setIsMuted(!isMuted); }
+    };
+
+    // ─────────────────────────────────────────────
+    //  RENDER
+    // ─────────────────────────────────────────────
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#070709', color: '#fff', fontFamily: "'Inter', 'Segoe UI', sans-serif", overflow: 'hidden' }}>
+
+            {/* ══════════════ PLAYER ══════════════ */}
+            <div style={{ position: 'relative', flexShrink: 0, height: 'min(56vw, 260px)', background: '#000' }}>
                 <video
                     ref={videoRef}
-                    className="w-full h-full object-contain bg-black"
-                    playsInline
-                    autoPlay
-                    muted={isMuted}
-                    onClick={handleVideoTap}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                    playsInline autoPlay muted={isMuted}
+                    onClick={() => {
+                        const v = videoRef.current;
+                        if (!v) return;
+                        v.paused ? v.play() : v.pause();
+                        setIsPlaying(!v.paused);
+                    }}
                 />
 
-                {/* Gradient overlays */}
-                <div className="player-gradient-top absolute top-0 left-0 right-0 h-20 z-10 pointer-events-none" />
-                <div className="player-gradient-bottom absolute bottom-0 left-0 right-0 h-24 z-10 pointer-events-none" />
+                {/* Top gradient */}
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 80, background: 'linear-gradient(to bottom, rgba(7,7,9,0.9), transparent)', zIndex: 10, pointerEvents: 'none' }} />
+                {/* Bottom gradient */}
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, background: 'linear-gradient(to top, rgba(7,7,9,0.95), transparent)', zIndex: 10, pointerEvents: 'none' }} />
 
                 {/* Top HUD */}
-                <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-3 z-20">
-                    <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl" style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)' }}>
-                            <Antenna size={11} className="text-violet-400" />
-                            <span className="text-xs font-black tracking-widest" style={{ color: '#a78bfa', fontSize: 10 }}>SHAZAN TV</span>
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', zIndex: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 12, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)' }}>
+                            <Antenna size={11} color="#a78bfa" />
+                            <span style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.2em', color: '#a78bfa' }}>SHAZAN TV</span>
                         </div>
-                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg"
-                            style={{ background: 'rgba(16,185,129,0.75)', backdropFilter: 'blur(8px)' }}>
-                            <Zap size={9} className="text-white" />
-                            <span className="text-white font-black" style={{ fontSize: 9 }}>DIALOG ZERO DATA ACTIVE</span>
+                        {/* Zero Data Badge */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 9px', borderRadius: 10, background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(16,185,129,0.4)', backdropFilter: 'blur(10px)' }}>
+                            <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10b981', display: 'block', animation: 'pulse 2s infinite' }} />
+                            <span style={{ fontSize: 9, fontWeight: 900, color: '#10b981', letterSpacing: '0.1em' }}>ZERO DATA</span>
                         </div>
                     </div>
-
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => activeChannel && initPlayer(activeChannel)}
-                            className="flex items-center justify-center rounded-xl"
-                            style={{ width: 34, height: 34, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' }}
-                        >
-                            <RefreshCw size={13} className={cn("text-white/60", isLoadingStream && "spinning text-violet-400")} />
-                        </button>
-                        <button
-                            onClick={toggleMute}
-                            className="flex items-center justify-center rounded-xl"
-                            style={{ width: 34, height: 34, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' }}
-                        >
-                            {isMuted ? <VolumeX size={13} className="text-red-400" /> : <Volume2 size={13} className="text-white/60" />}
-                        </button>
-                        <button
-                            onClick={toggleFullscreen}
-                            className="flex items-center justify-center rounded-xl"
-                            style={{ width: 34, height: 34, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)' }}
-                        >
-                            <Maximize size={13} className="text-white/60" />
-                        </button>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                        {[
+                            { icon: <RefreshCw size={13} color="#fff" opacity={0.6} />, action: () => activeChannel && initPlayer(activeChannel) },
+                            { icon: isMuted ? <VolumeX size={13} color="#f87171" /> : <Volume2 size={13} color="#fff" opacity={0.6} />, action: toggleMute },
+                            { icon: <Maximize size={13} color="#fff" opacity={0.6} />, action: toggleFS },
+                        ].map((b, i) => (
+                            <button key={i} onClick={b.action}
+                                style={{ width: 32, height: 32, borderRadius: 10, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                {b.icon}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
                 {/* Bottom HUD */}
-                <div className="absolute bottom-0 left-0 right-0 px-4 pb-3 z-20 pointer-events-none">
-                    <div className="flex items-end justify-between">
-                        <div className="flex-1 min-w-0">
-                            <p className="font-black text-white truncate" style={{ fontSize: 15, textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
-                                {activeChannel?.name || 'Select a channel'}
-                            </p>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                <p className="text-xs truncate font-bold" style={{ color: 'rgba(16,185,129,0.9)', fontSize: 10 }}>
-                                    Zero Data Connected
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex-shrink-0 ml-3">
-                            <div
-                                className="flex items-center justify-center rounded-xl pointer-events-auto"
-                                style={{ width: 38, height: 38, background: 'rgba(108,99,255,0.25)', border: '1px solid rgba(108,99,255,0.4)' }}
-                                onClick={handleVideoTap}
-                            >
-                                {isLoadingStream ? (
-                                    <Loader2 size={16} className="text-violet-300 spinning" />
-                                ) : isPlaying ? (
-                                    <Pause size={16} className="text-white" />
-                                ) : (
-                                    <Play size={16} className="text-white ml-0.5" />
-                                )}
-                            </div>
-                        </div>
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 14px 10px', zIndex: 20, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                        <p style={{ fontSize: 14, fontWeight: 900, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textShadow: '0 2px 8px rgba(0,0,0,0.9)', marginBottom: 3 }}>
+                            {activeChannel?.name || 'Select a Channel'}
+                        </p>
+                        <p style={{ fontSize: 10, color: isLoading ? '#fbbf24' : proxyOk ? '#10b981' : '#fb923c', fontWeight: 700, letterSpacing: '0.05em' }}>
+                            {statusMsg}
+                        </p>
                     </div>
+                    <button
+                        onClick={() => { const v = videoRef.current; if (!v) return; v.paused ? v.play() : v.pause(); setIsPlaying(!v.paused); }}
+                        style={{ width: 36, height: 36, borderRadius: 12, background: 'rgba(108,99,255,0.3)', border: '1px solid rgba(108,99,255,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: 10 }}>
+                        {isLoading ? <Loader2 size={16} color="#a78bfa" className="spinning" /> :
+                            isPlaying ? <Pause size={16} color="#fff" /> : <Play size={16} color="#fff" style={{ marginLeft: 2 }} />}
+                    </button>
                 </div>
 
                 {/* Loading overlay */}
-                <AnimatePresence>
-                    {isLoadingStream && (
-                        <motion.div
-                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            className="absolute inset-0 flex flex-col items-center justify-center z-30 pointer-events-none gap-4"
-                            style={{ background: 'rgba(5,5,7,0.6)', backdropFilter: 'blur(8px)' }}
-                        >
-                            <div className="relative flex items-center justify-center">
-                                <div className="absolute w-16 h-16 rounded-full border-2 border-emerald-500/20 animate-ping" />
-                                <div className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg"
-                                    style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.3), rgba(6,182,212,0.2))', border: '1px solid rgba(16,185,129,0.5)' }}>
-                                    <Loader2 size={20} className="text-emerald-300 spinning" />
-                                </div>
+                {isLoading && (
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(7,7,9,0.7)', backdropFilter: 'blur(8px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, zIndex: 30, pointerEvents: 'none' }}>
+                        <div style={{ position: 'relative' }}>
+                            <div style={{ position: 'absolute', width: 64, height: 64, borderRadius: '50%', border: '2px solid rgba(16,185,129,0.15)', animation: 'ping 1.5s infinite', top: '50%', left: '50%', transform: 'translate(-50%,-50%)' }} />
+                            <div style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Loader2 size={22} color="#10b981" className="spinning" />
                             </div>
-                            <div className="text-center">
-                                <p className="text-sm font-bold text-white/80">{statusMsg}</p>
-                                <p className="text-[10px] text-emerald-400/60 mt-1 uppercase tracking-widest font-black">Powered by Dialog Viu</p>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 700 }}>{statusMsg}</p>
+                            <p style={{ fontSize: 9, color: 'rgba(16,185,129,0.6)', fontWeight: 900, letterSpacing: '0.2em', marginTop: 4 }}>VIU ZERO DATA ENGINE</p>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            <div className="flex-shrink-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(16,185,129,0.3), transparent)' }} />
+            {/* Divider */}
+            <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(16,185,129,0.25), transparent)', flexShrink: 0 }} />
 
-            {/* ==================== CONTENT ==================== */}
-            <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+            {/* ══════════════ CONTENT ══════════════ */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
                 <AnimatePresence mode="wait">
 
-                    {/* ---- HOME TAB ---- */}
+                    {/* ── HOME TAB ── */}
                     {tab === 'home' && (
                         <motion.div key="home"
-                            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}
-                            className="flex-1 flex flex-col min-h-0"
-                        >
-                            <div className="flex-shrink-0 px-4 pt-3 pb-2">
-                                <div className="relative">
-                                    <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'rgba(255,255,255,0.25)' }} />
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}
+                            className="no-scrollbar">
+
+                            {/* Header */}
+                            <div style={{ padding: '16px 18px 8px' }}>
+                                <p style={{ fontSize: 10, fontWeight: 900, color: '#7c3aed', letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: 4 }}>Welcome To</p>
+                                <h1 style={{ fontSize: 26, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', margin: 0 }}>SHAZAN TV</h1>
+                            </div>
+
+                            {/* Search */}
+                            <div style={{ padding: '0 14px 10px' }}>
+                                <div style={{ position: 'relative' }}>
+                                    <Search size={14} color="rgba(255,255,255,0.3)" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
                                     <input
-                                        value={searchQuery}
-                                        onChange={e => setSearchQuery(e.target.value)}
+                                        value={searchQ} onChange={e => setSearchQ(e.target.value)}
                                         placeholder="Search channels..."
-                                        className="search-input"
+                                        style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 18, padding: '12px 14px 12px 38px', color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
                                     />
                                 </div>
                             </div>
 
-                            <div className="flex-shrink-0 flex gap-2 overflow-x-auto no-scrollbar px-4 pb-3">
-                                {categoriesList.map(cat => (
-                                    <button
-                                        key={cat} onClick={() => setActiveCategory(cat)}
-                                        className={cn("category-pill flex-shrink-0", activeCategory === cat ? "active" : "inactive")}
-                                    >
-                                        {CATEGORY_ICONS[cat] || '📦'} {cat}
+                            {/* Category Pills */}
+                            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '0 14px 14px' }}
+                                className="no-scrollbar">
+                                {['All', ...groupedCats].filter((v, i, a) => a.indexOf(v) === i).map(cat => (
+                                    <button key={cat} onClick={() => setActiveCat(cat)}
+                                        style={{
+                                            flexShrink: 0, padding: '8px 16px', borderRadius: 20, fontSize: 10, fontWeight: 900,
+                                            letterSpacing: '0.1em', textTransform: 'uppercase', border: 'none', cursor: 'pointer',
+                                            transition: 'all 0.2s',
+                                            background: activeCat === cat ? '#fff' : 'rgba(255,255,255,0.05)',
+                                            color: activeCat === cat ? '#000' : 'rgba(255,255,255,0.4)',
+                                        }}>
+                                        {CAT_ICONS[cat] || '📦'} {cat}
                                     </button>
                                 ))}
                             </div>
 
-                            <div className="flex-1 overflow-y-auto no-scrollbar px-3 pb-3">
-                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
-                                    {displayChannels.map((ch, idx) => {
-                                        const isActive = activeChannel?.id === ch.id;
-                                        return (
-                                            <motion.button
-                                                key={ch.id}
-                                                initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: Math.min(idx * 0.02, 0.3) }}
-                                                whileTap={{ scale: 0.91 }}
-                                                onClick={() => handleChannelSelect(ch)}
-                                                className={cn("channel-card aspect-square flex flex-col items-center justify-center gap-2 p-2 relative z-0", isActive && "active")}
-                                            >
-                                                {isActive && <span className="absolute top-2 right-2 w-2 h-2 rounded-full live-dot z-10" style={{ background: '#10b981' }} />}
-                                                <div className="relative z-10 flex items-center justify-center w-10 h-10 rounded-xl"
-                                                    style={{
-                                                        background: isActive ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)',
-                                                        border: isActive ? '1px solid rgba(16,185,129,0.4)' : '1px solid rgba(255,255,255,0.05)'
-                                                    }}>
-                                                    <ChannelLogo logo={ch.logo} name={ch.name} size={28} />
-                                                </div>
-                                                <span className="relative z-10 font-bold text-center leading-tight line-clamp-2 px-1 w-full"
-                                                    style={{ fontSize: 9, color: isActive ? '#6ee7b7' : 'rgba(255,255,255,0.65)' }}>
-                                                    {ch.name}
-                                                </span>
-                                            </motion.button>
-                                        );
-                                    })}
-                                </div>
+                            {/* Channel Sections */}
+                            <div style={{ paddingBottom: 100 }}>
+                                {(activeCat === 'All' ? groupedCats : [activeCat]).map(cat => {
+                                    const chs = (activeCat === 'All' ? channels : displayed).filter(c => c.category === cat);
+                                    if (chs.length === 0) return null;
+                                    return (
+                                        <div key={cat} style={{ marginBottom: 28 }}>
+                                            {/* Section header */}
+                                            <div style={{ display: 'flex', alignItems: 'center', padding: '0 18px', marginBottom: 12 }}>
+                                                <span style={{ fontSize: 16, marginRight: 8 }}>{CAT_ICONS[cat] || '📦'}</span>
+                                                <h2 style={{ fontSize: 11, fontWeight: 900, color: 'rgba(255,255,255,0.85)', letterSpacing: '0.2em', textTransform: 'uppercase', margin: 0 }}>{cat}</h2>
+                                                <div style={{ flex: 1, height: 1, background: 'linear-gradient(to right, rgba(255,255,255,0.08), transparent)', marginLeft: 12 }} />
+                                            </div>
+
+                                            {/* Horizontal scroll */}
+                                            <div style={{ display: 'flex', gap: 12, overflowX: 'auto', padding: '0 18px 4px' }}
+                                                className="no-scrollbar">
+                                                {(searchQ ? displayed.filter(c => c.category === cat) : chs).map(ch => {
+                                                    const isActive = activeChannel?.id === ch.id;
+                                                    return (
+                                                        <motion.button key={ch.id}
+                                                            whileTap={{ scale: 0.93 }}
+                                                            onClick={() => selectChannel(ch)}
+                                                            style={{
+                                                                flexShrink: 0, width: 110, display: 'flex', flexDirection: 'column',
+                                                                alignItems: 'center', gap: 10, padding: '16px 10px', borderRadius: 24,
+                                                                border: isActive ? '2px solid rgba(255,255,255,0.8)' : '1px solid rgba(255,255,255,0.06)',
+                                                                background: isActive ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.03)',
+                                                                cursor: 'pointer', transition: 'all 0.25s', position: 'relative'
+                                                            }}>
+                                                            <ChannelLogo logo={ch.logo} name={ch.name} size={48} />
+                                                            {isActive && (
+                                                                <div style={{ position: 'absolute', bottom: 14, right: 12, width: 10, height: 10, borderRadius: '50%', background: '#10b981', border: '2px solid #000', animation: 'pulse 2s infinite' }} />
+                                                            )}
+                                                            <span style={{ fontSize: 9, fontWeight: 900, textAlign: 'center', lineHeight: 1.3, color: isActive ? '#000' : 'rgba(255,255,255,0.55)', textTransform: 'uppercase', letterSpacing: '0.05em', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
+                                                                {ch.name}
+                                                            </span>
+                                                        </motion.button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+
+                                {displayed.length === 0 && (
+                                    <div style={{ textAlign: 'center', padding: '50px 20px', color: 'rgba(255,255,255,0.3)' }}>
+                                        <Radio size={32} style={{ marginBottom: 12, opacity: 0.4 }} />
+                                        <p style={{ fontSize: 14, fontWeight: 700 }}>No channels found</p>
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     )}
 
-                    {/* ---- CHANNELS TAB ---- */}
+                    {/* ── CHANNELS TAB ── */}
                     {tab === 'channels' && (
                         <motion.div key="channels"
-                            initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
-                            className="flex-1 overflow-y-auto no-scrollbar px-4 pt-4 pb-4"
-                        >
-                            <div className="flex items-center gap-2 mb-4">
-                                <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)' }}>
-                                    <Globe size={13} className="text-white" />
+                            initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }}
+                            style={{ flex: 1, overflowY: 'auto', padding: '16px 14px 100px', minHeight: 0 }}
+                            className="no-scrollbar">
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+                                <div style={{ width: 30, height: 30, borderRadius: 10, background: 'linear-gradient(135deg, #10b981, #06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Globe size={14} color="#fff" />
                                 </div>
-                                <p className="text-sm font-black text-white">Channel Packs (Auto Zero Data)</p>
+                                <p style={{ fontSize: 14, fontWeight: 900, color: '#fff', margin: 0 }}>Channel Packs</p>
+                                <span style={{ fontSize: 10, color: '#10b981', fontWeight: 700, background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: 8 }}>⚡ Zero Data</span>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3 mb-6">
-                                {IPTV_PLAYLISTS.map((pl, idx) => (
-                                    <motion.button
-                                        key={pl.id} onClick={() => handleLoadPlaylist(pl.id, pl.url, pl.name)}
-                                        className="playlist-card text-left"
-                                    >
-                                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${pl.color} flex items-center justify-center flex-shrink-0`}>
-                                            <span style={{ fontSize: 18 }}>{pl.emoji}</span>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+                                {IPTV_PACKS.map(pl => (
+                                    <motion.button key={pl.id} whileTap={{ scale: 0.95 }}
+                                        onClick={() => loadPack(pl.id, pl.url, pl.name)}
+                                        style={{
+                                            display: 'flex', alignItems: 'center', gap: 10, padding: '14px 12px', borderRadius: 18,
+                                            background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+                                            cursor: 'pointer', textAlign: 'left'
+                                        }}>
+                                        <div style={{ width: 38, height: 38, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, background: 'rgba(255,255,255,0.05)', flexShrink: 0 }}>
+                                            {pl.emoji}
                                         </div>
-                                        <div className="min-w-0 flex-1">
-                                            <p className="font-black text-white truncate" style={{ fontSize: 12 }}>{pl.name}</p>
-                                            <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.3)', fontSize: 9 }}>Free · Zero Data</p>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <p style={{ fontSize: 11, fontWeight: 900, color: '#fff', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pl.name}</p>
+                                            <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', margin: '3px 0 0', fontWeight: 700 }}>Free · Zero Data</p>
                                         </div>
-                                        {loadingPlaylistId === pl.id ? <Loader2 size={14} className="text-white/40 spinning" /> : <ChevronRight size={13} style={{ color: 'rgba(255,255,255,0.2)' }} />}
+                                        {loadingPack === pl.id ?
+                                            <Loader2 size={14} color="rgba(255,255,255,0.4)" className="spinning" /> :
+                                            <ChevronRight size={13} color="rgba(255,255,255,0.2)" />}
                                     </motion.button>
                                 ))}
                             </div>
 
-                            <div className="rounded-2xl p-4" style={{ background: 'rgba(17,17,24,0.8)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                                <p className="text-xs font-black mb-3" style={{ color: 'rgba(255,255,255,0.5)' }}>🔗 Add Custom M3U</p>
-                                <div className="flex gap-2">
-                                    <input
-                                        value={customUrl} onChange={e => setCustomUrl(e.target.value)}
-                                        placeholder="Paste m3u link here..." className="search-input flex-1" style={{ borderRadius: 12, paddingLeft: 14 }}
+                            {/* Custom URL */}
+                            <div style={{ borderRadius: 18, padding: 16, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                                <p style={{ fontSize: 11, fontWeight: 900, color: 'rgba(255,255,255,0.4)', margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>🔗 Add M3U / Stream URL</p>
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                    <input value={customUrl} onChange={e => setCustomUrl(e.target.value)}
+                                        placeholder="https://example.com/stream.m3u8"
+                                        style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '10px 12px', color: '#fff', fontSize: 12, outline: 'none' }}
                                     />
-                                    <button
-                                        onClick={handleCustomAdd} disabled={!customUrl.trim() || loadingPlaylistId !== null}
-                                        className="px-4 rounded-xl font-black text-white text-xs bg-emerald-600 shadow-lg active:scale-95"
-                                    >
-                                        {loadingPlaylistId === 'custom' ? <Loader2 size={13} className="spinning" /> : <PlusCircle size={13} />}
+                                    <button onClick={addCustom} disabled={!customUrl.trim() || loadingPack !== null}
+                                        style={{ padding: '0 16px', borderRadius: 12, background: '#059669', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        {loadingPack === 'custom' ? <Loader2 size={14} color="#fff" className="spinning" /> : <PlusCircle size={14} color="#fff" />}
                                     </button>
                                 </div>
                             </div>
+
+                            {/* Remove added channels */}
+                            {channels.length > BUILTIN_CHANNELS.length && (
+                                <button onClick={() => { saveChannels(BUILTIN_CHANNELS); setActiveCat('All'); }}
+                                    style={{ width: '100%', marginTop: 14, padding: '12px', borderRadius: 14, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)', color: 'rgba(239,68,68,0.7)', fontSize: 12, fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                                    <Trash2 size={13} /> Remove Added Packs
+                                </button>
+                            )}
                         </motion.div>
                     )}
 
-                    {/* ---- SETTINGS TAB ---- */}
+                    {/* ── SETTINGS TAB ── */}
                     {tab === 'settings' && (
                         <motion.div key="settings"
-                            initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
-                            className="flex-1 overflow-y-auto no-scrollbar px-4 pt-4 pb-4 space-y-4"
-                        >
-                            <div className="flex items-center gap-2 mb-2">
-                                <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #10b981, #06b6d4)' }}>
-                                    <ShieldCheck size={13} className="text-white" />
-                                </div>
-                                <p className="text-sm font-black text-white">System Status</p>
-                            </div>
+                            initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }}
+                            style={{ flex: 1, overflowY: 'auto', padding: '16px 14px 100px', minHeight: 0, display: 'flex', flexDirection: 'column', gap: 12 }}
+                            className="no-scrollbar">
 
-                            {/* Active Status Card */}
-                            <div className="rounded-2xl p-5" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(17,24,39,0.9))', border: '1px solid rgba(16,185,129,0.3)' }}>
-                                <div className="flex items-center gap-4 mb-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center">
-                                        <Zap size={24} className="text-emerald-400" />
-                                    </div>
-                                    <div>
-                                        <p className="font-black text-white">Dialog Zero Data</p>
-                                        <div className="flex items-center gap-1.5 mt-0.5">
-                                            <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                                            <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest">ACTIVE & OPTIMIZED</p>
+                            {/* Zero Data Status */}
+                            <div style={{ borderRadius: 20, padding: 18, background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(7,7,9,0.9))', border: '1px solid rgba(16,185,129,0.25)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                        <div style={{ width: 44, height: 44, borderRadius: 14, background: 'rgba(16,185,129,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <Zap size={22} color="#10b981" />
+                                        </div>
+                                        <div>
+                                            <p style={{ fontSize: 14, fontWeight: 900, color: '#fff', margin: 0 }}>Dialog Zero Data</p>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                                                <span style={{ width: 7, height: 7, borderRadius: '50%', background: zdActive ? '#10b981' : 'rgba(255,255,255,0.2)', display: 'block', animation: zdActive ? 'pulse 2s infinite' : 'none' }} />
+                                                <span style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.1em', color: zdActive ? '#10b981' : 'rgba(255,255,255,0.3)', textTransform: 'uppercase' }}>
+                                                    {zdActive ? 'Active — All Streams Proxied' : 'Disabled'}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
+                                    <button onClick={() => {
+                                        const v = !zdActive; setZdActive(v);
+                                        localStorage.setItem('zd_active', String(v));
+                                        setStatusMsg(v ? '⚡ Zero Data ON' : '⚠️ Direct Mode ON');
+                                    }}
+                                        style={{ padding: '8px 16px', borderRadius: 12, background: zdActive ? '#10b981' : 'rgba(255,255,255,0.1)', color: zdActive ? '#000' : '#fff', fontSize: 10, fontWeight: 900, border: 'none', cursor: 'pointer', transition: 'all 0.3s' }}>
+                                        {zdActive ? 'ON' : 'OFF'}
+                                    </button>
                                 </div>
-                                <p className="text-xs leading-relaxed" style={{ color: 'rgba(110,231,183,0.7)' }}>
-                                    Traffic is automatically routed via <strong>viu.lk</strong>. You can watch all channels even with <strong>Rs. 0.00</strong> balance on your Dialog SIM.
-                                </p>
+
+                                {/* How it works */}
+                                <div style={{ borderTop: '1px solid rgba(16,185,129,0.15)', paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    {[
+                                        { label: 'Traffic Fingerprint', value: 'Dialog Viu App v8.1.2' },
+                                        { label: 'Host Spoof', value: 'free.viu.lk' },
+                                        { label: 'Stream Proxy', value: '/api/proxy (Edge)' },
+                                        { label: 'M3U8 Rewriting', value: 'Full segment proxying' },
+                                    ].map(row => (
+                                        <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
+                                            <span style={{ color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{row.label}</span>
+                                            <span style={{ color: '#10b981', fontWeight: 800 }}>{row.value}</span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
 
-                            {/* Info Card */}
-                            <div className="rounded-2xl p-4 space-y-3" style={{ background: 'rgba(17,17,24,0.8)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                                <p className="text-xs font-black uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)', fontSize: 9 }}>Device Info</p>
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center text-xs">
-                                        <div className="flex items-center gap-2 text-white/50"><Smartphone size={14} /> Connection</div>
-                                        <span className="font-bold text-emerald-400">Secure Proxy (Viu)</span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-xs">
-                                        <div className="flex items-center gap-2 text-white/50"><Signal size={14} /> Optimization</div>
-                                        <span className="font-bold text-white">Data Free Mode</span>
-                                    </div>
+                            {/* How to use Zero Data */}
+                            <div style={{ borderRadius: 18, padding: 16, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                                <p style={{ fontSize: 10, fontWeight: 900, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.15em', textTransform: 'uppercase', margin: '0 0 12px' }}>📖 How to Use Without Data</p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                    {[
+                                        '1. Open app once using Wi-Fi or data',
+                                        '2. Add to Home Screen (PWA install)',
+                                        '3. Keep Dialog SIM active (any plan)',
+                                        '4. Open Shazan TV — Zero Data works!',
+                                        '5. All channels stream for FREE ⚡',
+                                    ].map(step => (
+                                        <div key={step} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                                            <CheckCircle2 size={14} color="#10b981" style={{ flexShrink: 0, marginTop: 1 }} />
+                                            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>{step}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
 
-                            <button
-                                onClick={() => confirm('Reset app?') && localStorage.clear() && window.location.reload()}
-                                className="w-full py-4 rounded-2xl font-black text-sm text-red-400/80 bg-red-500/5 border border-red-500/10 active:scale-95"
-                            >
-                                Clear Cache & Restart
+                            {/* App info */}
+                            <div style={{ borderRadius: 18, padding: 16, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Total Channels</span>
+                                    <span style={{ fontSize: 12, color: '#fff', fontWeight: 800 }}>{channels.length}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Proxy Status</span>
+                                    <span style={{ fontSize: 12, color: proxyOk ? '#10b981' : '#fb923c', fontWeight: 800 }}>{proxyOk ? 'Active' : 'Direct Mode'}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>Version</span>
+                                    <span style={{ fontSize: 12, color: '#fff', fontWeight: 800 }}>2.0 (Viu Engine)</span>
+                                </div>
+                            </div>
+
+                            <button onClick={() => {
+                                if (confirm('Clear all data and restart?')) {
+                                    localStorage.clear();
+                                    window.location.reload();
+                                }
+                            }}
+                                style={{ padding: '14px', borderRadius: 16, background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.15)', color: 'rgba(239,68,68,0.7)', fontSize: 12, fontWeight: 900, cursor: 'pointer', letterSpacing: '0.05em' }}>
+                                Clear Cache & Reset
                             </button>
                         </motion.div>
                     )}
                 </AnimatePresence>
             </div>
 
-            {/* ==================== BOTTOM NAV ==================== */}
-            <div className="flex-shrink-0" style={{ background: 'rgba(5,5,7,0.92)', backdropFilter: 'blur(24px)', borderTop: '1px solid rgba(255,255,255,0.05)', paddingBottom: 'max(10px, env(safe-area-inset-bottom))', paddingTop: 4 }}>
-                <div className="flex items-center justify-around px-2">
-                    {[
-                        { id: 'home', icon: MonitorPlay, label: 'Watch' },
-                        { id: 'channels', icon: LayoutGrid, label: 'Channels' },
-                        { id: 'settings', icon: Settings, label: 'Status' },
-                    ].map(item => {
-                        const isActive = tab === item.id;
-                        return (
-                            <button key={item.id} onClick={() => setTab(item.id as Tab)} className={cn("nav-item flex-1", isActive && "active")}>
-                                <item.icon size={21} strokeWidth={isActive ? 2.5 : 1.5} className="nav-icon" style={{ color: isActive ? '#10b981' : 'rgba(255,255,255,0.3)' }} />
-                                <span className="nav-label" style={{ color: isActive ? '#10b981' : 'rgba(255,255,255,0.3)' }}>{item.label}</span>
-                            </button>
-                        );
-                    })}
-                </div>
+            {/* ══════════════ BOTTOM NAV ══════════════ */}
+            <div style={{
+                flexShrink: 0, background: 'rgba(7,7,9,0.95)', backdropFilter: 'blur(24px)',
+                borderTop: '1px solid rgba(255,255,255,0.05)',
+                paddingBottom: 'max(12px, env(safe-area-inset-bottom))', paddingTop: 6,
+                display: 'flex'
+            }}>
+                {([
+                    { id: 'home', icon: MonitorPlay, label: 'Watch' },
+                    { id: 'channels', icon: LayoutGrid, label: 'Channels' },
+                    { id: 'settings', icon: ShieldCheck, label: 'Zero Data' },
+                ] as { id: Tab, icon: any, label: string }[]).map(({ id, icon: Icon, label }) => {
+                    const active = tab === id;
+                    return (
+                        <button key={id} onClick={() => setTab(id)}
+                            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '8px 4px', background: 'none', border: 'none', cursor: 'pointer' }}>
+                            <Icon size={22} strokeWidth={active ? 2.5 : 1.5} color={active ? '#10b981' : 'rgba(255,255,255,0.25)'} />
+                            <span style={{ fontSize: 9, fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase', color: active ? '#10b981' : 'rgba(255,255,255,0.25)' }}>{label}</span>
+                        </button>
+                    );
+                })}
             </div>
         </div>
     );

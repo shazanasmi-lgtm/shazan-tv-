@@ -3,18 +3,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     typescript: {
-        // Ignore TypeScript build errors so Vercel can deploy
         ignoreBuildErrors: true,
     },
     eslint: {
-        // Ignore ESLint errors during build
         ignoreDuringBuilds: true,
     },
-    async rewrites() {
+    async headers() {
         return [
             {
-                source: '/stream/:path*',
-                destination: 'https://:path*',
+                source: '/api/:path*',
+                headers: [
+                    { key: 'Access-Control-Allow-Origin', value: '*' },
+                    { key: 'Access-Control-Allow-Methods', value: 'GET,OPTIONS' },
+                    { key: 'Access-Control-Allow-Headers', value: '*' },
+                ],
             },
         ];
     },

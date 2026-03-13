@@ -1,0 +1,20 @@
+[
+  {
+    "id": "swarnavahini",
+    "status": 404,
+    "isM3u8": false
+  },
+  {
+    "id": "swarnavahini_yupp",
+    "error": "The operation was aborted due to timeout"
+  },
+  {
+    "id": "sirasa_yt",
+    "status": 404,
+    "isM3u8": false
+  },
+  {
+    "id": "derana_test",
+    "error": "The operation was aborted due to timeout"
+  }
+]

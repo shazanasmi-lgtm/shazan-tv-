@@ -1,0 +1,108 @@
+﻿To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :app
+WARNING: Using flatDir should be avoided because it doesn't support any meta-data formats.
+
+> Configure project :capacitor-cordova-android-plugins
+WARNING: Using flatDir should be avoided because it doesn't support any meta-data formats.
+
+> Task :capacitor-android:preBuild UP-TO-DATE
+> Task :capacitor-android:preDebugBuild UP-TO-DATE
+> Task :capacitor-android:mergeDebugJniLibFolders UP-TO-DATE
+> Task :capacitor-android:mergeDebugNativeLibs NO-SOURCE
+> Task :capacitor-android:stripDebugDebugSymbols NO-SOURCE
+> Task :capacitor-android:checkDebugAarMetadata
+> Task :capacitor-android:generateDebugResValues UP-TO-DATE
+> Task :capacitor-android:copyDebugJniLibsProjectAndLocalJars
+> Task :capacitor-android:generateDebugResources UP-TO-DATE
+> Task :capacitor-android:packageDebugResources UP-TO-DATE
+> Task :capacitor-android:processDebugNavigationResources UP-TO-DATE
+> Task :capacitor-android:parseDebugLocalResources UP-TO-DATE
+> Task :capacitor-android:generateDebugRFile UP-TO-DATE
+> Task :capacitor-android:extractDebugAnnotations SKIPPED
+> Task :capacitor-android:extractDeepLinksForAarDebug
+> Task :capacitor-android:mergeDebugShaders UP-TO-DATE
+> Task :capacitor-android:compileDebugShaders NO-SOURCE
+> Task :capacitor-android:generateDebugAssets UP-TO-DATE
+> Task :capacitor-android:mergeDebugAssets UP-TO-DATE
+> Task :capacitor-android:javaPreCompileDebug UP-TO-DATE
+> Task :capacitor-android:compileDebugJavaWithJavac UP-TO-DATE
+> Task :capacitor-android:mergeDebugGeneratedProguardFiles
+> Task :capacitor-android:mergeDebugConsumerProguardFiles
+> Task :capacitor-android:prepareDebugArtProfile
+> Task :capacitor-android:prepareLintJarForPublish UP-TO-DATE
+> Task :capacitor-android:processDebugManifest UP-TO-DATE
+> Task :capacitor-android:processDebugJavaRes NO-SOURCE
+> Task :capacitor-android:writeDebugAarMetadata UP-TO-DATE
+> Task :capacitor-android:mergeDebugJavaResource
+> Task :capacitor-android:syncDebugLibJars FAILED
+
+[Incubating] Problems report is available at: file:///C:/Users/Shazan/OneDrive/Desktop/Shazan%20TV/shazan-tv-app/android/build/reports/problems/problems-report.html
+.\gradlew : 
+At line:1 char:13
++ cd android; .\gradlew :capa
+citor-android:assembleDebug 
+--no-daemon -- ...
++             ~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (:String  
+  ) [], RemoteException
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+FAILURE: Build failed with 
+an exception.
+
+* What went wrong:
+A problem was found with the 
+configuration of task ':capac
+itor-android:syncDebugLibJars
+' (type 
+'LibraryAarJarsTask').
+  - In plugin 'com.android.in
+ternal.version-check' type 'c
+om.android.build.gradle.inter
+nal.tasks.LibraryAarJarsTask'
+ property 'typedefRecipe' 
+specifies file 'C:\Users\Shaz
+an\OneDrive\Desktop\Shazan TV
+\shazan-tv-app\node_modules\@
+capacitor\android\capacitor\b
+uild\intermediates\annotation
+s_typedef_file\debug\extractD
+ebugAnnotations\typedefs.txt'
+ which doesn't exist.
+    
+    Reason: An input file 
+was expected to be present 
+but it doesn't exist.
+    
+    Possible solutions:
+      1. Make sure the file 
+exists before the task is 
+called.
+      2. Make sure that the 
+task which produces the file 
+is declared as an input.
+    
+    For more information, 
+please refer to https://docs.
+gradle.org/8.14.3/userguide/v
+alidation_problems.html#input
+_file_does_not_exist in the 
+Gradle documentation.
+
+* Try:
+> Make sure the file exists 
+before the task is called
+> Make sure that the task 
+which produces the file is 
+declared as an input
+> Run with --scan to get 
+full insights.
+
+BUILD FAILED in 12s
+22 actionable tasks: 8 executed, 14 up-to-date

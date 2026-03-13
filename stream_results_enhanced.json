@@ -1,0 +1,56 @@
+[
+  {
+    "id": "sony_ten_1",
+    "status": 200,
+    "isM3u8": true,
+    "preview": "#EXTM3U\n#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=3"
+  },
+  {
+    "id": "sony_ten_2",
+    "status": 200,
+    "isM3u8": true,
+    "preview": "#EXTM3U\n#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=4"
+  },
+  {
+    "id": "sony_ten_5",
+    "status": 200,
+    "isM3u8": true,
+    "preview": "#EXTM3U\n#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=5"
+  },
+  {
+    "id": "star_sports_2",
+    "status": 200,
+    "isM3u8": true,
+    "preview": "#EXTM3U\n#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=5"
+  },
+  {
+    "id": "star_sports_3",
+    "status": 200,
+    "isM3u8": true,
+    "preview": "#EXTM3U\n#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=2"
+  },
+  {
+    "id": "tv_1",
+    "status": 200,
+    "isM3u8": true,
+    "preview": "#EXTM3U\n#EXT-X-VERSION:3\n\n#EXT-X-STREAM-INF:BANDWI"
+  },
+  {
+    "id": "siyatha",
+    "status": 200,
+    "isM3u8": true,
+    "preview": "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-STREAM-INF:PROGRAM"
+  },
+  {
+    "id": "asia_tv",
+    "status": 200,
+    "isM3u8": true,
+    "preview": "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-STREAM-INF:BANDWID"
+  },
+  {
+    "id": "ndtv_lk",
+    "status": 200,
+    "isM3u8": true,
+    "preview": "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-STREAM-INF:BANDWID"
+  }
+]

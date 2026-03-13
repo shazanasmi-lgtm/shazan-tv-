@@ -1,0 +1,14 @@
+{
+  "appId": "com.shazan.tv.app",
+  "appName": "Shazan TV",
+  "webDir": "out",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  },
+  "server": {
+    "cleartext": true
+  }
+}

@@ -1,0 +1,151 @@
+﻿To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :app
+WARNING: Using flatDir should be avoided because it doesn't support any meta-data formats.
+
+> Configure project :capacitor-cordova-android-plugins
+WARNING: Using flatDir should be avoided because it doesn't support any meta-data formats.
+
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :capacitor-android:preBuild UP-TO-DATE
+> Task :capacitor-android:preDebugBuild UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:preBuild UP-TO-DATE
+> Task :capacitor-cordova-android-plugins:preDebugBuild UP-TO-DATE
+> Task :capacitor-android:writeDebugAarMetadata
+> Task :capacitor-cordova-android-plugins:writeDebugAarMetadata
+> Task :app:javaPreCompileDebug
+> Task :capacitor-android:processDebugNavigationResources
+> Task :capacitor-cordova-android-plugins:processDebugNavigationResources
+> Task :app:checkDebugAarMetadata
+> Task :app:processDebugNavigationResources
+> Task :app:generateDebugResValues
+> Task :app:compileDebugNavigationResources
+> Task :capacitor-android:generateDebugResValues
+> Task :capacitor-android:generateDebugResources
+> Task :capacitor-android:packageDebugResources
+> Task :capacitor-cordova-android-plugins:generateDebugResValues
+> Task :capacitor-cordova-android-plugins:generateDebugResources
+> Task :capacitor-cordova-android-plugins:packageDebugResources
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :capacitor-android:extractDeepLinksDebug
+> Task :capacitor-cordova-android-plugins:extractDeepLinksDebug
+> Task :app:parseDebugLocalResources
+> Task :capacitor-android:compileDebugLibraryResources
+> Task :capacitor-android:parseDebugLocalResources
+> Task :capacitor-cordova-android-plugins:compileDebugLibraryResources
+> Task :capacitor-cordova-android-plugins:processDebugManifest
+> Task :capacitor-android:processDebugManifest
+> Task :capacitor-android:generateDebugRFile
+> Task :app:mergeDebugResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :capacitor-android:javaPreCompileDebug
+> Task :capacitor-cordova-android-plugins:javaPreCompileDebug
+> Task :capacitor-cordova-android-plugins:parseDebugLocalResources
+> Task :capacitor-android:compileDebugJavaWithJavac FAILED
+> Task :app:processDebugManifestForPackage
+.\gradlew : 
+At line:1 char:30
++ ... dlew clean; .\gradlew 
+assembleDebug --no-daemon 
+--offline --console=p ...
++                 ~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (:String  
+  ) [], RemoteException
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+FAILURE: Build failed with 
+an exception.
+
+* What went wrong:
+Execution failed for task ':c
+apacitor-android:compileDebug
+JavaWithJavac'.
+> java.io.IOException: 
+Unable to delete directory 'C
+:\Users\Shazan\OneDrive\Deskt
+op\Shazan TV\shazan-tv-app\no
+de_modules\@capacitor\android
+\capacitor\build\intermediate
+s\javac\debug\compileDebugJav
+aWithJavac\classes'
+    Failed to delete some 
+children. This might happen 
+because a process has files 
+open or has its working 
+directory set in the target 
+directory.
+    - C:\Users\Shazan\OneDriv
+e\Desktop\Shazan TV\shazan-tv
+-app\node_modules\@capacitor\
+android\capacitor\build\inter
+mediates\javac\debug\compileD
+ebugJavaWithJavac\classes\com
+\getcapacitor\annotation
+    - C:\Users\Shazan\OneDriv
+e\Desktop\Shazan TV\shazan-tv
+-app\node_modules\@capacitor\
+android\capacitor\build\inter
+mediates\javac\debug\compileD
+ebugJavaWithJavac\classes\com
+\getcapacitor\cordova
+    - C:\Users\Shazan\OneDriv
+e\Desktop\Shazan TV\shazan-tv
+-app\node_modules\@capacitor\
+android\capacitor\build\inter
+mediates\javac\debug\compileD
+ebugJavaWithJavac\classes\com
+\getcapacitor\plugin\util
+    - C:\Users\Shazan\OneDriv
+e\Desktop\Shazan TV\shazan-tv
+-app\node_modules\@capacitor\
+android\capacitor\build\inter
+mediates\javac\debug\compileD
+ebugJavaWithJavac\classes\com
+\getcapacitor\plugin
+    - C:\Users\Shazan\OneDriv
+e\Desktop\Shazan TV\shazan-tv
+-app\node_modules\@capacitor\
+android\capacitor\build\inter
+mediates\javac\debug\compileD
+ebugJavaWithJavac\classes\com
+\getcapacitor\util
+    - C:\Users\Shazan\OneDriv
+e\Desktop\Shazan TV\shazan-tv
+-app\node_modules\@capacitor\
+android\capacitor\build\inter
+mediates\javac\debug\compileD
+ebugJavaWithJavac\classes\com
+\getcapacitor
+    - C:\Users\Shazan\OneDriv
+e\Desktop\Shazan TV\shazan-tv
+-app\node_modules\@capacitor\
+android\capacitor\build\inter
+mediates\javac\debug\compileD
+ebugJavaWithJavac\classes\com
+
+* Try:
+> Run with --stacktrace 
+option to get the stack 
+trace.
+> Run with --info or --debug 
+option to get more log 
+output.
+> Run with --scan to get 
+full insights.
+> Get more help at 
+https://help.gradle.org.
+
+BUILD FAILED in 19s
+37 actionable tasks: 37 executed

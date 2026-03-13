@@ -1,0 +1,30 @@
+﻿
+> shazan-tv-app@0.1.0 build
+> next build
+
+  Ôû▓ Next.js 14.2.3
+
+   Creating an optimized production build ...
+ Ô£ô Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+   Generating static pages (0/4) ...
+   Generating static pages (1/4) 
+   Generating static pages (2/4) 
+   Generating static pages (3/4) 
+ Ô£ô Generating static pages (4/4)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+Ôöî Ôùï /                                    203 kB          290 kB
+Ôöö Ôùï /_not-found                          871 B          87.9 kB
++ First Load JS shared by all            87 kB
+  Ôö£ chunks/23-65acef6c9995cc48.js        31.6 kB
+  Ôö£ chunks/fd9d1056-00bb33a35b5f8051.js  53.6 kB
+  Ôöö other shared chunks (total)          1.86 kB
+
+
+Ôùï  (Static)  prerendered as static content
+

@@ -1,0 +1,320 @@
+﻿
+> shazan-tv-app@0.1.0 build
+> next build
+
+  Ôû▓ Next.js 14.2.3
+
+   Creating an optimized production build ...
+node.exe : Failed to compile.
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (Failed   
+  to compile.:String) [],    
+ RemoteException
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+
+./src/app/globals.css.webpack
+[javascript/auto]!=!./node_mo
+dules/next/dist/build/webpack
+/loaders/css-loader/src/index
+.js??ruleSet[1].rules[13].one
+Of[12].use[2]!./node_modules/
+next/dist/build/webpack/loade
+rs/postcss-loader/src/index.j
+s??ruleSet[1].rules[13].oneOf
+[12].use[3]!./src/app/globals
+.css
+Error: Cannot find module 'C:
+\Users\Shazan\OneDrive\Deskto
+p\Shazan TV\shazan-tv-app\nod
+e_modules\lines-and-columns\b
+uild\index.js'. Please 
+verify that the package.json 
+has a valid "main" entry
+    at tryPackage (node:inter
+nal/modules/cjs/loader:524:19
+)
+    at Module._findPath (node
+:internal/modules/cjs/loader:
+792:18)
+    at Module.<anonymous> (no
+de:internal/modules/cjs/loade
+r:1405:27)
+    at C:\Users\Shazan\OneDri
+ve\Desktop\Shazan TV\shazan-t
+v-app\node_modules\next\dist\
+server\require-hook.js:55:36
+    at defaultResolveImpl (no
+de:internal/modules/cjs/loade
+r:1058:19)
+    at 
+resolveForCJSWithHooks (node:
+internal/modules/cjs/loader:1
+063:22)
+    at Module._load (node:int
+ernal/modules/cjs/loader:1226
+:37)
+    at 
+TracingChannel.traceSync (nod
+e:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:i
+nternal/modules/cjs/loader:24
+4:24)
+    at Module.<anonymous> (no
+de:internal/modules/cjs/loade
+r:1503:12)
+
+Import trace for requested 
+module:
+./src/app/globals.css.webpack
+[javascript/auto]!=!./node_mo
+dules/next/dist/build/webpack
+/loaders/css-loader/src/index
+.js??ruleSet[1].rules[13].one
+Of[12].use[2]!./node_modules/
+next/dist/build/webpack/loade
+rs/postcss-loader/src/index.j
+s??ruleSet[1].rules[13].oneOf
+[12].use[3]!./src/app/globals
+.css
+./src/app/globals.css
+
+./src/app/globals.css
+Error: Cannot find module 'C:
+\Users\Shazan\OneDrive\Deskto
+p\Shazan TV\shazan-tv-app\nod
+e_modules\lines-and-columns\b
+uild\index.js'. Please 
+verify that the package.json 
+has a valid "main" entry
+    at tryPackage (node:inter
+nal/modules/cjs/loader:524:19
+)
+    at Module._findPath (node
+:internal/modules/cjs/loader:
+792:18)
+    at Module.<anonymous> (no
+de:internal/modules/cjs/loade
+r:1405:27)
+    at C:\Users\Shazan\OneDri
+ve\Desktop\Shazan TV\shazan-t
+v-app\node_modules\next\dist\
+server\require-hook.js:55:36
+    at defaultResolveImpl (no
+de:internal/modules/cjs/loade
+r:1058:19)
+    at 
+resolveForCJSWithHooks (node:
+internal/modules/cjs/loader:1
+063:22)
+    at Module._load (node:int
+ernal/modules/cjs/loader:1226
+:37)
+    at 
+TracingChannel.traceSync (nod
+e:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:i
+nternal/modules/cjs/loader:24
+4:24)
+    at Module.<anonymous> (no
+de:internal/modules/cjs/loade
+r:1503:12)
+    at tryRunOrWebpackError (
+C:\Users\Shazan\OneDrive\Desk
+top\Shazan TV\shazan-tv-app\n
+ode_modules\next\dist\compile
+d\webpack\bundle5.js:28:31298
+9)
+    at 
+__webpack_require_module__ (C
+:\Users\Shazan\OneDrive\Deskt
+op\Shazan TV\shazan-tv-app\no
+de_modules\next\dist\compiled
+\webpack\bundle5.js:28:131165
+)
+    at __nested_webpack_requi
+re_153728__ (C:\Users\Shazan\
+OneDrive\Desktop\Shazan TV\sh
+azan-tv-app\node_modules\next
+\dist\compiled\webpack\bundle
+5.js:28:130607)
+    at C:\Users\Shazan\OneDri
+ve\Desktop\Shazan TV\shazan-t
+v-app\node_modules\next\dist\
+compiled\webpack\bundle5.js:2
+8:131454
+    at symbolIterator (C:\Use
+rs\Shazan\OneDrive\Desktop\Sh
+azan TV\shazan-tv-app\node_mo
+dules\next\dist\compiled\neo-
+async\async.js:1:14444)
+    at done (C:\Users\Shazan\
+OneDrive\Desktop\Shazan TV\sh
+azan-tv-app\node_modules\next
+\dist\compiled\neo-async\asyn
+c.js:1:14824)
+    at Hook.eval [as 
+callAsync] (eval at create (C
+:\Users\Shazan\OneDrive\Deskt
+op\Shazan TV\shazan-tv-app\no
+de_modules\next\dist\compiled
+\webpack\bundle5.js:13:28858)
+, <anonymous>:15:1)
+    at 
+Hook.CALL_ASYNC_DELEGATE [as 
+_callAsync] (C:\Users\Shazan\
+OneDrive\Desktop\Shazan TV\sh
+azan-tv-app\node_modules\next
+\dist\compiled\webpack\bundle
+5.js:13:26012)
+    at C:\Users\Shazan\OneDri
+ve\Desktop\Shazan TV\shazan-t
+v-app\node_modules\next\dist\
+compiled\webpack\bundle5.js:2
+8:130328
+    at symbolIterator (C:\Use
+rs\Shazan\OneDrive\Desktop\Sh
+azan TV\shazan-tv-app\node_mo
+dules\next\dist\compiled\neo-
+async\async.js:1:14402)
+-- inner error --
+Error: Cannot find module 'C:
+\Users\Shazan\OneDrive\Deskto
+p\Shazan TV\shazan-tv-app\nod
+e_modules\lines-and-columns\b
+uild\index.js'. Please 
+verify that the package.json 
+has a valid "main" entry
+    at tryPackage (node:inter
+nal/modules/cjs/loader:524:19
+)
+    at Module._findPath (node
+:internal/modules/cjs/loader:
+792:18)
+    at Module.<anonymous> (no
+de:internal/modules/cjs/loade
+r:1405:27)
+    at C:\Users\Shazan\OneDri
+ve\Desktop\Shazan TV\shazan-t
+v-app\node_modules\next\dist\
+server\require-hook.js:55:36
+    at defaultResolveImpl (no
+de:internal/modules/cjs/loade
+r:1058:19)
+    at 
+resolveForCJSWithHooks (node:
+internal/modules/cjs/loader:1
+063:22)
+    at Module._load (node:int
+ernal/modules/cjs/loader:1226
+:37)
+    at 
+TracingChannel.traceSync (nod
+e:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:i
+nternal/modules/cjs/loader:24
+4:24)
+    at Module.<anonymous> (no
+de:internal/modules/cjs/loade
+r:1503:12)
+    at Object.<anonymous> (C:
+\Users\Shazan\OneDrive\Deskto
+p\Shazan TV\shazan-tv-app\nod
+e_modules\next\dist\build\web
+pack\loaders\css-loader\src\i
+ndex.js??ruleSet[1].rules[13]
+.oneOf[12].use[2]!C:\Users\Sh
+azan\OneDrive\Desktop\Shazan 
+TV\shazan-tv-app\node_modules
+\next\dist\build\webpack\load
+ers\postcss-loader\src\index.
+js??ruleSet[1].rules[13].oneO
+f[12].use[3]!C:\Users\Shazan\
+OneDrive\Desktop\Shazan TV\sh
+azan-tv-app\src\app\globals.c
+ss:1:7)
+    at C:\Users\Shazan\OneDri
+ve\Desktop\Shazan TV\shazan-t
+v-app\node_modules\next\dist\
+compiled\webpack\bundle5.js:2
+8:922493
+    at Hook.eval [as call] 
+(eval at create (C:\Users\Sha
+zan\OneDrive\Desktop\Shazan T
+V\shazan-tv-app\node_modules\
+next\dist\compiled\webpack\bu
+ndle5.js:13:28636), 
+<anonymous>:7:1)
+    at Hook.CALL_DELEGATE 
+[as _call] (C:\Users\Shazan\O
+neDrive\Desktop\Shazan TV\sha
+zan-tv-app\node_modules\next\
+dist\compiled\webpack\bundle5
+.js:13:25906)
+    at C:\Users\Shazan\OneDri
+ve\Desktop\Shazan TV\shazan-t
+v-app\node_modules\next\dist\
+compiled\webpack\bundle5.js:2
+8:131198
+    at tryRunOrWebpackError (
+C:\Users\Shazan\OneDrive\Desk
+top\Shazan TV\shazan-tv-app\n
+ode_modules\next\dist\compile
+d\webpack\bundle5.js:28:31294
+3)
+    at 
+__webpack_require_module__ (C
+:\Users\Shazan\OneDrive\Deskt
+op\Shazan TV\shazan-tv-app\no
+de_modules\next\dist\compiled
+\webpack\bundle5.js:28:131165
+)
+    at __nested_webpack_requi
+re_153728__ (C:\Users\Shazan\
+OneDrive\Desktop\Shazan TV\sh
+azan-tv-app\node_modules\next
+\dist\compiled\webpack\bundle
+5.js:28:130607)
+    at C:\Users\Shazan\OneDri
+ve\Desktop\Shazan TV\shazan-t
+v-app\node_modules\next\dist\
+compiled\webpack\bundle5.js:2
+8:131454
+    at symbolIterator (C:\Use
+rs\Shazan\OneDrive\Desktop\Sh
+azan TV\shazan-tv-app\node_mo
+dules\next\dist\compiled\neo-
+async\async.js:1:14444)
+
+Generated code for C:\Users\S
+hazan\OneDrive\Desktop\Shazan
+ TV\shazan-tv-app\node_module
+s\next\dist\build\webpack\loa
+ders\css-loader\src\index.js?
+?ruleSet[1].rules[13].oneOf[1
+2].use[2]!C:\Users\Shazan\One
+Drive\Desktop\Shazan TV\shaza
+n-tv-app\node_modules\next\di
+st\build\webpack\loaders\post
+css-loader\src\index.js??rule
+Set[1].rules[13].oneOf[12].us
+e[3]!C:\Users\Shazan\OneDrive
+\Desktop\Shazan TV\shazan-tv-
+app\src\app\globals.css
+
+Import trace for requested 
+module:
+./src/app/globals.css
+
+
+> Build failed because of 
+webpack errors

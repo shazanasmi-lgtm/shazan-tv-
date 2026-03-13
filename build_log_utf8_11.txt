@@ -1,0 +1,83 @@
+﻿To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+.\gradlew : 
+At line:1 char:13
++ cd android; .\gradlew 
+assembleDebug --no-daemon 
+--console=plain > ..\ ...
++             ~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (:String  
+  ) [], RemoteException
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+FAILURE: Build failed with 
+an exception.
+
+* What went wrong:
+A problem occurred 
+configuring root project 
+'android'.
+> Could not resolve all 
+artifacts for configuration 
+'classpath'.
+   > Could not resolve com.an
+droid.tools.build:gradle:8.7.
+2.
+     Required by:
+         root project :
+      > Could not resolve com
+.android.tools.build:gradle:8
+.7.2.
+         > Could not get 
+resource 'https://dl.google.c
+om/dl/android/maven2/com/andr
+oid/tools/build/gradle/8.7.2/
+gradle-8.7.2.pom'.
+            > Could not HEAD 
+'https://dl.google.com/dl/and
+roid/maven2/com/android/tools
+/build/gradle/8.7.2/gradle-8.
+7.2.pom'.
+               > Got socket 
+exception during request. It 
+might be caused by SSL 
+misconfiguration
+                  > 
+Connection reset
+      > Could not resolve com
+.android.tools.build:gradle:8
+.7.2.
+         > Could not get 
+resource 'https://repo.maven.
+apache.org/maven2/com/android
+/tools/build/gradle/8.7.2/gra
+dle-8.7.2.pom'.
+            > Could not HEAD 
+'https://repo.maven.apache.or
+g/maven2/com/android/tools/bu
+ild/gradle/8.7.2/gradle-8.7.2
+.pom'.
+               > Got socket 
+exception during request. It 
+might be caused by SSL 
+misconfiguration
+                  > Network 
+is unreachable: getsockopt
+
+* Try:
+> Run with --stacktrace 
+option to get the stack 
+trace.
+> Run with --info or --debug 
+option to get more log 
+output.
+> Run with --scan to get 
+full insights.
+> Get more help at 
+https://help.gradle.org.
+
+BUILD FAILED in 6m 54s
